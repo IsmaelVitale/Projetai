@@ -19,9 +19,9 @@ function NewProjectModal({ onClose, onSave }) {
 
     return (
         <div className="modal-backdrop" onClick={onClose}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content" role="dialog" aria-modal="true" aria-labelledby="modal-title" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
-                    <h3>Novo Projeto</h3>
+                    <h3 id="modal-title">Novo Projeto</h3>
                     <button onClick={onClose} className="close-btn">&times;</button>
                 </div>
                 <form onSubmit={handleSubmit} className="modal-body">
