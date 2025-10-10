@@ -1,0 +1,83 @@
+.project-view-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+.project-header {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.project-header h1 {
+    margin: 0 0 0.5rem 0;
+    font-size: 2.5rem;
+    color: #1e293b;
+}
+
+.project-description {
+    font-size: 1.1rem;
+    color: #475569;
+    margin: 0 0 1.5rem 0;
+    max-width: 80ch; /* Limita a largura do texto para melhor legibilidade */
+}
+
+.project-actions .details-btn {
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+}
+
+.project-actions .details-btn:hover {
+    background-color: #e2e8f0;
+}
+
+
+.kanban-controls {
+    margin-bottom: 2rem;
+}
+
+.new-task-btn {
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.25rem;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+}
+
+.new-task-btn:hover {
+    background-color: #1d4ed8;
+}
+
+.kanban-board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    align-items: flex-start;
+}
+
+.loading-message, .error-message {
+    text-align: center;
+    margin-top: 4rem;
+    font-size: 1.2rem;
+    color: #64748b;
+}
+
+/* --- [OTIMIZAÇÃO] Estilo para o card "fantasma" --- */
+.task-card.is-overlay {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    transform: scale(1.05); /* Efeito de "levantar" o card */
+    cursor: grabbing;
+}
+

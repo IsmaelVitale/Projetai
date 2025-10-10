@@ -1,0 +1,76 @@
+.app-header {
+    background-color: #ffffff;
+    padding: 1rem 2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid #e2e8f0;
+    position: sticky;
+    top: 0;
+    z-index: 500;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1400px; /* Aumentado para dar mais espaço */
+    margin: 0 auto;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem; /* Espaço entre o título e o código */
+}
+
+.header-title-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.header-title-link h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #1e293b;
+}
+
+/* Novo estilo para o código do projeto no header */
+.header-project-code {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.85rem;
+    background-color: #eef2ff;
+    color: #4338ca;
+    padding: 0.3rem 0.6rem;
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+
+/* Estilo base para os botões de ação no header */
+.header-action-btn {
+    border: 1px solid #cbd5e1;
+    background-color: #f8fafc;
+    color: #334155;
+    border-radius: 8px;
+    padding: 0.7rem 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.header-action-btn:hover {
+    background-color: #f1f5f9;
+    border-color: #94a3b8;
+}
+
+/* Estilo para o botão primário (ex: Novo Projeto) */
+.header-action-btn.primary {
+    background-color: #2563eb;
+    border-color: #2563eb;
+    color: white;
+}
+
+.header-action-btn.primary:hover {
+    background-color: #1d4ed8;
+    border-color: #1d4ed8;
+}

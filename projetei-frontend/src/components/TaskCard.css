@@ -1,0 +1,85 @@
+.task-card {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    /* A transição agora se aplica a todas as propriedades */
+    transition: all 0.25s ease-in-out;
+}
+
+.task-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px -1px rgba(0, 0, 0, 0.1), 0 2px 6px -2px rgba(0, 0, 0, 0.08);
+}
+
+.task-card h4 {
+    margin: 0 0 0.75rem 0;
+    color: #334155;
+    font-size: 0.95rem; /* Ajuste fino no tamanho da fonte */
+}
+
+/* Detalhes sempre visíveis */
+.task-details {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.8rem;
+}
+
+.priority-tag {
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+.checklist-progress {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+/* --- ESTILOS PARA A ÁREA DE EXPANSÃO --- */
+
+.task-extra-details {
+    max-height: 0;
+    overflow: hidden;
+    /* Transição suave para a altura e margem */
+    transition: max-height 0.25s ease-in-out, margin-top 0.25s ease-in-out;
+}
+
+/* No hover, a seção se expande */
+.task-card:hover .task-extra-details {
+    max-height: 100px; /* Altura máxima que a seção pode ter */
+    margin-top: 1rem;  /* Cria um espaço quando a seção aparece */
+}
+
+.extra-detail-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #64748b;
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+}
+
+.extra-detail-item.description {
+    align-items: flex-start; /* Alinha o ícone no topo */
+}
+
+.task-description-summary {
+    font-size: 0.8rem;
+    color: #475569;
+    margin: 0;
+    /* Limita o resumo a duas linhas */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.4;
+}
