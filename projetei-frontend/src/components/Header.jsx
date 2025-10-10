@@ -20,11 +20,11 @@ function Header({ onNewProjectClick, onEditProjectClick, isProjectView, projectC
                 <div className="header-right">
                     {/* Renderização condicional do botão */}
                     {isProjectView ? (
-                        <button onClick={onEditProjectClick} className="header-action-btn">
+                        <button type="button" onClick={onEditProjectClick} className="header-action-btn">
                             Editar Projeto
                         </button>
                     ) : (
-                        <button onClick={onNewProjectClick} className="header-action-btn primary">
+                        <button type="button" onClick={onNewProjectClick} className="header-action-btn primary">
                             + Novo Projeto
                         </button>
                     )}
