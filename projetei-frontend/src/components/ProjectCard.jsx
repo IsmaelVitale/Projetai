@@ -15,7 +15,9 @@ function ProjectCard({ project }) {
                 </div>
                 <p className="card-description">{description}</p>
                 <div className="card-footer">
-                    <div className="progress-bar" style={{ width: `${progress}%` }}></div>
+                    <div className="progress-bar-container">
+                        <div className="progress-bar" style={{ width: `${progress}%` }} />
+                    </div>
                 </div>
             </div>
         </Link>
