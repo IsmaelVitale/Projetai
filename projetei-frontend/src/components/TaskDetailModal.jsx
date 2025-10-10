@@ -39,7 +39,7 @@ function TaskDetailModal({
         if (task) {
             setTitle(task.title || '');
             setDescription(task.description || '');
-            setDueDate(task.dueDate || '');
+            setDueDate((task.dueDate || '').slice(0, 10));
             setPriority(task.priority || 'MEDIUM');
         }
     }, [task]);
