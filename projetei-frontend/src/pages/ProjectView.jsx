@@ -1,16 +1,18 @@
-import { useState, useEffect } from 'react';
+import {useState, useEffect, useRef} from 'react';
 import { useParams } from 'react-router-dom';
 
 // --- [DND-KIT] 1. IMPORTAÇÕES NECESSÁRIAS ---
 // DndContext: Gerencia o estado de arrastar e soltar.
 // DragOverlay: Cria um "fantasma" do item arrastado para uma experiência fluida.
 // closestCenter: Algoritmo de detecção de colisão.
-import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core';
+import { DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+
 
 import {
     fetchProjectByCode,
     updateChecklistItem,
     fetchTaskById,
+    addTaskToProject,
     addCommentToTask,
     deleteComment,
     updateTask,
@@ -18,7 +20,9 @@ import {
     deleteChecklistItem,
     updateComment,
     updateTaskStatus
+
 } from '../services/apiService';
+import QuickAddTask from '../components/QuickAddTask.jsx';
 import KanbanColumn from '../components/KanbanColumn.jsx';
 import TaskDetailModal from '../components/TaskDetailModal.jsx';
 // Adicionamos o TaskCard aqui para usá-lo no DragOverlay
@@ -30,6 +34,40 @@ function ProjectView() {
     const [project, setProject] = useState(null);
     const [loading, setLoading] = useState(true);
     const [selectedTask, setSelectedTask] = useState(null);
+
+    const [creatingQuick, setCreatingQuick] = useState(false);
+    const quickAddApi = useRef(null);
+
+    const handleQuickCreate = async ({ title }) => {
+        if (!project?.id) return;
+        try {
+            setCreatingQuick(true);
+            const payload = {
+                title,
+                status: 'TODO',     // cai direto na coluna "A Fazer"
+                priority: 'MEDIUM', // default
+            };
+            const created = await addTaskToProject(project.id, payload);
+
+            // Atualiza board otimistamente com a resposta da API
+            setProject(prev => ({ ...prev, tasks: [...(prev.tasks || []), created] }));
+
+
+
+        } catch (err) {
+            console.error('Erro ao criar tarefa:', err);
+            alert('Não foi possível criar a tarefa.');
+        } finally {
+            setCreatingQuick(false);
+        }
+    };
+
+    const handleNewTaskClick = () => {
+        quickAddApi.current?.open();
+        // (opcional) rolar a coluna até o topo
+        document.getElementById('col-TODO')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    };
+
 
     // --- [DND-KIT] ALTERAÇÃO: Estado para o card ativo ---
     // Guarda a informação da tarefa que está sendo arrastada para usar no DragOverlay.
@@ -70,49 +108,79 @@ function ProjectView() {
         setActiveTask(task);
     };
 
-// --- [CORREÇÃO DEFINITIVA] ---
-    // A função handleDragEnd foi refinada para garantir a comparação correta dos IDs como strings.
-    const handleDragEnd = (event) => {
+    const handleDragEnd = async (event) => {
         setActiveTask(null);
         const { active, over } = event;
-
         if (!over) return;
 
-        const taskId = active.id.toString();
-        const newStatus = over.id.toString();
-        const task = project.tasks.find(t => t.id.toString() === taskId);
+        const taskId = String(active.id);
+        const overId = String(over.id);
 
-        if (task && task.status === newStatus) return;
+        const task = project.tasks.find(t => String(t.id) === taskId);
+        if (!task) return;
 
-        setProject(prevProject => {
-            const updatedTasks = prevProject.tasks.map(t => {
-                if (t.id.toString() === taskId) {
-                    return { ...t, status: newStatus };
-                }
-                return t;
-            });
-            return { ...prevProject, tasks: updatedTasks };
-        });
+        // Se soltou em cima de um CARD, a coluna é a do card; se soltou na COLUNA, overId já é o status
+        const overTask = project.tasks.find(t => String(t.id) === overId);
+        const newStatus = overTask ? overTask.status : overId; // "TODO" | "DOING" | "DONE"
 
-        updateTaskStatus(taskId, newStatus).catch(error => {
-            console.error("Falha ao atualizar a tarefa:", error);
-            loadProject();
-            alert("Não foi possível mover a tarefa. Tente novamente.");
-        });
+        if (task.status === newStatus) return;
+
+        // 🔒 Regras de negócio
+        if (!canMoveTo(task, newStatus)) {
+            if (newStatus === 'DONE') {
+                alert('Para concluir, complete todos os itens do checklist (ou remova o checklist).');
+            } else if (newStatus === 'TODO') {
+                alert('Não é possível voltar para "A Fazer" quando todos os itens do checklist estão concluídos.');
+            }
+            return;
+        }
+
+
+        // ✅ Atualização otimista
+        setProject(prev => ({
+            ...prev,
+            tasks: prev.tasks.map(t => String(t.id) === taskId ? { ...t, status: newStatus } : t),
+        }));
+
+        try {
+            // 🔗 Persiste no backend (endpoint novo)
+            const saved = await updateTaskStatus(taskId, newStatus);
+
+            // 🔄 Sincroniza a tarefa com o backend (caso backend ajuste algo)
+            // Se o endpoint já retorna a Task completa, você pode usar `saved`.
+            const fresh = await fetchTaskById(taskId);
+            setProject(prev => ({
+                ...prev,
+                tasks: prev.tasks.map(t => String(t.id) === taskId ? fresh : t),
+            }));
+            if (selectedTask?.id && String(selectedTask.id) === taskId) {
+                setSelectedTask(fresh);
+            }
+        } catch (err) {
+            // Se o backend bloquear pelas regras, retornar 409 é o ideal
+            if (err?.status === 409) {
+                alert('Movimentação inválida de acordo com as regras do checklist.');
+            } else {
+                alert('Não foi possível atualizar o status. O quadro será recarregado.');
+            }
+            loadProject(); // rollback seguro
+        }
     };
 
-
-    // Função para lidar com a atualização de um item de checklist
-    const handleChecklistItemUpdate = async (itemId, updateData) => {
-        await updateChecklistItem(itemId, updateData);
-        loadProject();
-    };
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+    );
 
     // Função para lidar com o clique em um card de tarefa, abrindo o modal
-    const handleCardClick = (task) => {
-        fetchTaskById(task.id).then(fullTaskData => {
+    const handleCardClick = async (task) => {
+        try {
+            const fullTaskData = await fetchTaskById(task.id);
             setSelectedTask(fullTaskData);
-        });
+        } catch (err) {
+            console.error('Falha ao buscar tarefa completa, abrindo com dados locais:', err);
+            // Fallback: abre o modal com o que já temos (parcial), melhor do que não abrir
+            setSelectedTask(task);
+        }
     };
 
     // Função para fechar o modal
@@ -120,50 +188,80 @@ function ProjectView() {
         setSelectedTask(null);
     };
 
-    // Função para adicionar um novo comentário
-    const handleCommentAdd = async (commentData) => {
-        if (!selectedTask) return;
-        const newComment = await addCommentToTask(selectedTask.id, commentData);
-        if (newComment) {
-            handleCardClick(selectedTask);
-        }
-    };
-
-    // Função para deletar um comentário
-    const handleCommentDelete = async (commentId) => {
-        if (!selectedTask) return;
-        const success = await deleteComment(commentId);
-        if (success) {
-            handleCardClick(selectedTask);
-        }
-    };
-
     // Função para atualizar os dados da tarefa (título, descrição, etc.)
     const handleTaskUpdate = async (taskId, taskData) => {
         const updatedTask = await updateTask(taskId, taskData);
         if (updatedTask) {
-            handleCardClick(updatedTask);
-            loadProject();
+            setSelectedTask(updatedTask);
+            setProject(prev => ({
+                ...prev,
+                tasks: prev.tasks.map(t => t.id === updatedTask.id ? updatedTask : t)
+            }));
         } else {
             alert('Falha ao atualizar a tarefa.');
         }
     };
+
+    const handleTaskDeleted = (taskId) => {
+        setSelectedTask(null); // fecha o modal
+        setProject(prev => ({
+            ...prev,
+            tasks: prev.tasks.filter(t => t.id !== taskId)
+        }));
+    };
+
+
 
     // Função para adicionar item ao checklist
     const handleChecklistItemAdd = async (itemData) => {
         if (!selectedTask) return;
         const newItem = await addChecklistItemToTask(selectedTask.id, itemData);
         if (newItem) {
-            handleCardClick(selectedTask);
+            const updated = await fetchTaskById(selectedTask.id);
+            setSelectedTask(updated);
+            setProject(prev => ({
+                ...prev,
+                tasks: prev.tasks.map(t => t.id === updated.id ? updated : t)
+            }));
         }
     };
+
+    const handleChecklistItemUpdate = async (itemId, updateData) => {
+        if (!selectedTask) return;
+        await updateChecklistItem(itemId, updateData);
+        const updated = await fetchTaskById(selectedTask.id);
+        setSelectedTask(updated);
+        setProject(prev => ({
+            ...prev,
+            tasks: prev.tasks.map(t => t.id === updated.id ? updated : t)
+        }));
+    };
+
 
     // Função para deletar item do checklist
     const handleChecklistItemDelete = async (itemId) => {
         if (!selectedTask) return;
         const success = await deleteChecklistItem(itemId);
         if (success) {
-            handleCardClick(selectedTask);
+            const updated = await fetchTaskById(selectedTask.id);
+            setSelectedTask(updated);
+            setProject(prev => ({
+                ...prev,
+                tasks: prev.tasks.map(t => t.id === updated.id ? updated : t)
+            }));
+        }
+    };
+
+    const handleCommentAdd = async (commentData) => {
+        if (!selectedTask) return;
+        const newComment = await addCommentToTask(selectedTask.id, commentData);
+        if (newComment) {
+            const updated = await fetchTaskById(selectedTask.id);
+            setSelectedTask(updated);
+            setProject(prev => ({
+                ...prev,
+                tasks: prev.tasks.map(t => t.id === updated.id ? updated : t)
+            }));
         }
     };
 
@@ -172,15 +270,69 @@ function ProjectView() {
         if (!selectedTask) return;
         const updatedComment = await updateComment(commentId, commentData);
         if (updatedComment) {
-            handleCardClick(selectedTask);
+            const updated = await fetchTaskById(selectedTask.id);
+            setSelectedTask(updated);
+            setProject(prev => ({
+                ...prev,
+                tasks: prev.tasks.map(t => t.id === updated.id ? updated : t)
+            }));
         }
     };
 
-    const handleViewDetailsClick = () => alert('Modal "Detalhes do Projeto" a ser implementado.');
-
-    const handleNewTaskClick = () => {
-        alert('Abrir modal para criar nova tarefa (a ser implementado)');
+    const handleCommentDelete = async (commentId) => {
+        if (!selectedTask) return;
+        const success = await deleteComment(commentId);
+        if (success) {
+            const updated = await fetchTaskById(selectedTask.id);
+            setSelectedTask(updated);
+            setProject(prev => ({
+                ...prev,
+                tasks: prev.tasks.map(t => t.id === updated.id ? updated : t)
+            }));
+        }
     };
+
+    // Conta itens de checklist concluídos/total (compatível com seu backend)
+    const getChecklistCounts = (task) => {
+        const list = task?.checklist ?? task?.checklistItems ?? [];
+        const total = Array.isArray(list) ? list.length : 0;
+        const done  = list.filter(i =>
+            i?.checked === true ||
+            i?.completed === true ||
+            i?.isCompleted === true ||
+            i?.done === true ||
+            String(i?.status ?? '').toUpperCase() === 'DONE' ||
+            String(i?.status ?? '').toUpperCase() === 'COMPLETED'
+        ).length;
+        return { done, total };
+    };
+
+    // Valida se pode mover para newStatus de acordo com o checklist
+    const canMoveTo = (task, newStatus) => {
+        const list = task?.checklist ?? task?.checklistItems ?? [];
+        const total = Array.isArray(list) ? list.length : 0;
+        const done  = list.filter(i =>
+            i?.checked === true ||
+            i?.completed === true ||
+            i?.isCompleted === true ||
+            i?.done === true ||
+            String(i?.status ?? '').toUpperCase() === 'DONE' ||
+            String(i?.status ?? '').toUpperCase() === 'COMPLETED'
+        ).length;
+
+        const hasChecklist = total > 0;
+        const allChecked   = hasChecklist && done === total;
+
+        if (newStatus === 'DONE')  return !hasChecklist || allChecked; // DONE: sem checklist OU todos marcados
+        if (newStatus === 'TODO')  return !hasChecklist || !allChecked; // TODO: sem checklist OU NÃO todos marcados (↩️ ajuste aqui)
+        if (newStatus === 'DOING') return true;                        // DOING: sempre pode
+
+        return false;
+    };
+
+
+
+    const handleViewDetailsClick = () => alert('Modal "Detalhes do Projeto" a ser implementado.');
 
     if (loading) {
         return <div className="loading-message">Carregando projeto...</div>;
@@ -189,10 +341,25 @@ function ProjectView() {
         return <div className="error-message">Projeto não encontrado.</div>;
     }
 
+    // helper: data mais antiga primeiro; sem data vai pro final
+    const byDueDate = (a, b) => {
+        const ap = a?.dueDate ? Date.parse(a.dueDate) : NaN;
+        const bp = b?.dueDate ? Date.parse(b.dueDate) : NaN;
+        const aHas = !Number.isNaN(ap);
+        const bHas = !Number.isNaN(bp);
+        if (aHas && bHas) return ap - bp;
+        if (aHas && !bHas) return -1;
+        if (!aHas && bHas) return 1;
+        return (a.id ?? 0) - (b.id ?? 0); // desempate estável
+    };
+
+    const sortTasks = (list) => [...list].sort(byDueDate);
+
     const tasks = project.tasks || [];
-    const todoTasks = tasks.filter(task => task.status === 'TODO');
-    const doingTasks = tasks.filter(task => task.status === 'DOING');
-    const doneTasks = tasks.filter(task => task.status === 'DONE');
+    const todoTasks = sortTasks(tasks.filter(t => t.status === 'TODO'));
+    const doingTasks = sortTasks(tasks.filter(t => t.status === 'DOING'));
+    const doneTasks  = sortTasks(tasks.filter(t => t.status === 'DONE'));
+
 
     // --- [CORREÇÃO DEFINITIVA] ---
     // Criamos arrays de IDs (como strings) para passar para cada KanbanColumn.
@@ -213,12 +380,47 @@ function ProjectView() {
             <div className="kanban-controls">
                 <button onClick={handleNewTaskClick} className="new-task-btn">+ Nova Tarefa</button>
             </div>
-            <DndContext collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+            <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+            >
                 <div className="kanban-board">
                     {/* Passamos os IDs pré-calculados para cada coluna */}
-                    <KanbanColumn title="A Fazer" tasks={todoTasks} taskIds={todoTaskIds} columnId="TODO" onCardClick={handleCardClick} />
-                    <KanbanColumn title="Em Andamento" tasks={doingTasks} taskIds={doingTaskIds} columnId="DOING" onCardClick={handleCardClick} />
-                    <KanbanColumn title="Concluído" tasks={doneTasks} taskIds={doneTaskIds} columnId="DONE" onCardClick={handleCardClick} />
+                    <KanbanColumn
+                        title="A Fazer"
+                        tasks={todoTasks}
+                        taskIds={todoTaskIds}
+                        columnId="TODO"
+                        onCardClick={handleCardClick}
+                    >
+                        <div id="quickadd-todo">
+                            <QuickAddTask
+                                onCreate={handleQuickCreate}
+                                creating={creatingQuick}
+                                expose={(api) => (quickAddApi.current = api)}
+                            />
+                        </div>
+                    </KanbanColumn>
+
+                    <KanbanColumn
+                        title="Em Andamento"
+                        tasks={doingTasks}
+                        taskIds={doingTaskIds}
+                        columnId="DOING"
+                        onCardClick={handleCardClick}
+                    />
+
+                    <KanbanColumn
+                        title="Concluído"
+                        tasks={doneTasks}
+                        taskIds={doneTaskIds}
+                        columnId="DONE"
+                        onCardClick={handleCardClick}
+                    />
+
+
                 </div>
                 <DragOverlay>
                     {activeTask ? <TaskCard task={activeTask} isOverlay={true} /> : null}
@@ -229,6 +431,7 @@ function ProjectView() {
                     task={selectedTask}
                     onClose={handleCloseModal}
                     onTaskUpdate={handleTaskUpdate}
+                    onTaskDeleted={handleTaskDeleted}
                     onCommentAdd={handleCommentAdd}
                     onCommentDelete={handleCommentDelete}
                     onChecklistItemUpdate={handleChecklistItemUpdate}

@@ -14,6 +14,7 @@ import br.com.projetei.api.repository.TaskRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import br.com.projetei.api.dto.UpdateTaskStatusDTO;
 
 import java.util.List;
 
@@ -159,6 +160,17 @@ public class TaskService {
         }
 
         // A anotação @Transactional cuida de salvar as alterações.
+        return task;
+    }
+
+    @Transactional
+    public Task updateTaskStatus(Long taskId, UpdateTaskStatusDTO dto) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new EntityNotFoundException("Tarefa não encontrada com o ID: " + taskId));
+
+        task.setStatus(dto.getStatus());
+
+        // A anotação @Transactional garante que a mudança será salva.
         return task;
     }
 }

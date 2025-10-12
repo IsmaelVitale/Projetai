@@ -1,11 +1,3 @@
-.kanban-column {
-    background-color: #f1f5f9;
-    border-radius: 12px;
-    padding: 1rem;
-    display: flex;
-    flex-direction: column;
-}
-
 .column-title {
     font-size: 1rem;
     font-weight: 600;
@@ -22,3 +14,40 @@
     flex-grow: 1; /* Faz a coluna crescer para preencher o espaço */
     min-height: 200px; /* Altura mínima para colunas vazias */
 }
+
+.kanban-column {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #f1f5f9;
+    border-radius: 12px;
+    padding: 12px;
+}
+
+.kanban-column-header { margin-bottom: 8px; } /* espaçamento uniforme em todas */
+
+.kanban-quickadd-slot { margin-bottom: 0; }   /* slot não adiciona gap por si só */
+
+/* zona droppable com gap padrão abaixo do header/quickadd */
+.kanban-dropzone {
+    flex: 1;
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;              /* espaço entre cards */
+}
+
+/* highlight mais sutil */
+.kanban-dropzone.is-over {
+    box-shadow: inset 0 0 0 2px rgba(37,99,235,0.35);
+    border-radius: 10px;
+    background: rgba(37,99,235,0.06);
+}
+
+.kanban-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+}
+

@@ -40,6 +40,18 @@ Este projeto é a interface visual do Projetaí. Ele foi construído do zero uti
     ```
 4.  Abra o navegador no endereço fornecido (geralmente `http://localhost:5173`).
 
+## 🔧 Configuração do ambiente front-end
+
+O projeto utiliza **Vite** e permite configurar o endereço base da API via variável de ambiente.
+
+### 📁 Arquivo `.env`
+
+Crie um arquivo `.env` na raiz do projeto (no mesmo nível do `package.json`) com o seguinte conteúdo:
+
+```bash
+VITE_API_URL=http://localhost:8081
+
+
 ## Estrutura de Pastas e Arquivos
 
 O projeto está organizado dentro da pasta `src/` para separar claramente as responsabilidades de cada parte do código.

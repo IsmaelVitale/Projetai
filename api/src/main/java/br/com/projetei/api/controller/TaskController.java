@@ -20,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import br.com.projetei.api.dto.UpdateTaskDTO;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import br.com.projetei.api.dto.UpdateTaskStatusDTO;
 
 @RestController
 @RequestMapping("/api/tasks")
@@ -97,6 +98,14 @@ public class TaskController {
             @PathVariable Long taskId,
             @RequestBody UpdateTaskDTO dto) {
         Task updatedTask = taskService.updateTask(taskId, dto);
+        return ResponseEntity.ok(updatedTask);
+    }
+
+    @PatchMapping("/{taskId}/status")
+    public ResponseEntity<Task> updateStatus(
+            @PathVariable Long taskId,
+            @RequestBody UpdateTaskStatusDTO dto) {
+        Task updatedTask = taskService.updateTaskStatus(taskId, dto);
         return ResponseEntity.ok(updatedTask);
     }
 }

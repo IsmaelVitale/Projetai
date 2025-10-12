@@ -9,7 +9,7 @@ function Dashboard({ projects }) {
             {projects.length > 0 ? (
                 <div className="projects-grid">
                     {projects.map(project => (
-                        <ProjectCard key={project.id} project={project} />
+                        <ProjectCard key={project.id ?? project.code} project={project} />
                     ))}
                 </div>
             ) : (

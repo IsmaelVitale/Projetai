@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import './TaskDetailModal.css';
 import { FaPencilAlt, FaCheck, FaTimes } from 'react-icons/fa';
+import {deleteTask} from "../services/apiService.js";
 
 const priorityLabels = {
     LOW: 'Baixa',
@@ -17,7 +18,8 @@ function TaskDetailModal({
                              onChecklistItemUpdate,
                              onChecklistItemAdd,
                              onChecklistItemDelete,
-                             onCommentUpdate
+                             onCommentUpdate,
+                             onTaskDeleted
                          }) {
 
     // Estados para os campos principais da tarefa (usados na edição)
@@ -47,6 +49,20 @@ function TaskDetailModal({
     if (!task) {
         return null;
     }
+
+    const handleDelete = async () => {
+        const confirm = window.confirm("Deseja realmente excluir esta tarefa?");
+        if (!confirm) return;
+
+        try {
+            await deleteTask(task.id);
+            onTaskDeleted?.(task.id); // notifica o ProjectView
+        } catch (err) {
+            console.error("Erro ao deletar tarefa:", err);
+            alert("Não foi possível excluir a tarefa.");
+        }
+    };
+
 
     // Funções para os formulários de adição
     const handleCommentSubmit = (e) => {
@@ -309,8 +325,17 @@ function TaskDetailModal({
                         </form>
                     </div>
                 </div>
+
+                <div className="modal-footer">
+                    <button className="danger-btn" onClick={handleDelete}>
+                        🗑 Excluir Tarefa
+                    </button>
+                </div>
+
             </div>
         </div>
+
+
     );
 }
 
