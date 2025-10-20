@@ -1,34 +1,203 @@
 import './Header.css';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { fetchProjectByCode } from '../services/apiService';
 
-// O Header agora recebe mais props para controlar o que é exibido
-function Header({ onNewProjectClick, onEditProjectClick, isProjectView, projectCode }) {
+function looksLikeCode(q) {
+    const v = String(q || '').trim();
+    if (!v) return false;
+    if (/\s/.test(v)) return false;               // não pode ter espaço
+    return /^[A-Za-z0-9_-]{4,}$/.test(v);         // ajuste caso seu padrão mude
+}
+
+function Header({ onNewProjectClick, isProjectView, projectCode }) {
+    const navigate = useNavigate();
+
+    // Busca
+    const [query, setQuery] = useState('');
+    const [searching, setSearching] = useState(false);
+
+    // Toast
+    const [toastMsg, setToastMsg] = useState('');
+    const [toastOpen, setToastOpen] = useState(false);
+    const showToast = (msg) => {
+        setToastMsg(msg);
+        setToastOpen(true);
+        window.clearTimeout((showToast)._t);
+        (showToast)._t = window.setTimeout(() => setToastOpen(false), 2500);
+    };
+
+    // Ouve toasts globais (ex.: Dashboard dispara quando a busca por NOME não encontra nada)
+    useEffect(() => {
+        const onToast = (e) => {
+            const message = e.detail?.message || e.detail || 'Esse projeto não existe.';
+            showToast(message);
+        };
+        window.addEventListener('ui:toast', onToast);
+        return () => window.removeEventListener('ui:toast', onToast);
+    }, []);
+
+    const goBack = () => {
+        const ref = document.referrer || '';
+        let sameOrigin = false;
+        try { sameOrigin = ref && new URL(ref).origin === window.location.origin; } catch {}
+        // Só usa histórico se a origem for a mesma (não sai do site)
+        if (sameOrigin && window.history.length > 1) {
+            navigate(-1);
+        } else {
+            navigate('/'); // fallback seguro: Dashboard
+        }
+    };
+
+    const goMyProjects = () => {
+        navigate('/');
+        window.dispatchEvent(new Event('dashboard:show-mine'));
+    };
+
+    const openProjectDetails = () => {
+        // ProjectView já escuta esse evento e abre o modal de detalhes (modo normal)
+        window.dispatchEvent(new Event('project:open-details'));
+    };
+
+    // Busca por NOME em tempo real (filtra na Dashboard)
+    const handleChange = (e) => {
+        const q = e.target.value;
+        setQuery(q);
+        // só filtra por nome; submit/Enter cuida do caso de CÓDIGO
+        window.dispatchEvent(new CustomEvent('dashboard:search-name', { detail: { q } }));
+    };
+
+    // Submit: se for CÓDIGO, busca via API e abre modal em modo "lookup"
+    const handleSearch = async (e) => {
+        e.preventDefault();
+        const q = query.trim();
+        if (!q) return;
+
+        if (!looksLikeCode(q)) {
+            // Nome: já filtramos em tempo real; sem submit necessário.
+            // Se quiser forçar um feedback imediato, a Dashboard emitirá toast se não houver nenhum match.
+            return;
+        }
+
+        try {
+            setSearching(true);
+            const found = await fetchProjectByCode(q);
+            if (!found) {
+                showToast('Esse projeto não existe.');
+                return;
+            }
+            // App abrirá o modal em modo lookup
+            window.dispatchEvent(
+                new CustomEvent('project:open-modal', { detail: { project: found, mode: 'lookup' } })
+            );
+        } catch (err) {
+            console.error('Erro ao buscar projeto por código:', err);
+            showToast('Não foi possível buscar o projeto.');
+        } finally {
+            setSearching(false);
+        }
+    };
+
     return (
         <header className="app-header">
             <div className="header-content">
+                {/* ESQUERDA: Projetaí → Voltar → Meus Projetos */}
                 <div className="header-left">
-                    {/* O título agora é um link para a home */}
                     <Link to="/" className="header-title-link">
                         <h2>Projetaí</h2>
                     </Link>
-                    {/* Exibe o código do projeto se estivermos na ProjectView */}
+
+                    <button
+                        type="button"
+                        className="header-action-btn"
+                        onClick={goBack}
+                        aria-label="Voltar"
+                        title="Voltar"
+                    >
+                        ← Voltar
+                    </button>
+
+                    <button
+                        type="button"
+                        className="header-action-btn"
+                        onClick={goMyProjects}
+                        aria-label="Meus Projetos"
+                        title="Meus Projetos"
+                    >
+                        Meus Projetos
+                    </button>
+
+                    {/* depois */}
                     {isProjectView && projectCode && (
-                        <span className="header-project-code">{projectCode}</span>
+                        <div className="project-code-wrap">
+                            <span className="header-project-code">{projectCode}</span>
+                            <button
+                                type="button"
+                                className="icon-btn"
+                                title="Copiar código"
+                                aria-label="Copiar código do projeto"
+                                onClick={async () => {
+                                    try {
+                                        await navigator.clipboard.writeText(projectCode);
+                                        // usa o toast que já existe no Header
+                                        window.dispatchEvent(new CustomEvent('ui:toast', { detail: { message: 'Código copiado!' } }));
+                                    } catch {
+                                        window.dispatchEvent(new CustomEvent('ui:toast', { detail: { message: 'Não foi possível copiar.' } }));
+                                    }
+                                }}
+                            >
+                                {/* ícone “duas páginas” (inline SVG) */}
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <path d="M9 3h9a2 2 0 0 1 2 2v9" stroke="#334155" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                                    <rect x="3" y="7" width="14" height="14" rx="2" stroke="#334155" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
                     )}
+
                 </div>
 
+                {/* DIREITA: Dashboard => +Novo Projeto + Busca | ProjectView => Ver Detalhes */}
                 <div className="header-right">
-                    {/* Renderização condicional do botão */}
                     {isProjectView ? (
-                        <button type="button" onClick={onEditProjectClick} className="header-action-btn">
-                            Editar Projeto
+                        <button
+                            type="button"
+                            onClick={openProjectDetails}
+                            className="header-action-btn"
+                            aria-label="Ver detalhes do projeto"
+                        >
+                            Ver Detalhes do Projeto
                         </button>
                     ) : (
-                        <button type="button" onClick={onNewProjectClick} className="header-action-btn primary">
-                            + Novo Projeto
-                        </button>
+                        <>
+                            <button
+                                type="button"
+                                onClick={onNewProjectClick}
+                                className="header-action-btn primary"
+                            >
+                                + Novo Projeto
+                            </button>
+
+                            <form className="header-search" onSubmit={handleSearch} role="search" aria-label="Buscar projetos">
+                                <input
+                                    type="search"
+                                    placeholder="Buscar por código ou nome…"
+                                    value={query}
+                                    onChange={handleChange}
+                                    aria-label="Buscar projetos por código ou nome"
+                                />
+                                <button type="submit" className="header-action-btn" disabled={searching}>
+                                    {searching ? 'Buscando…' : 'Buscar'}
+                                </button>
+                            </form>
+                        </>
                     )}
                 </div>
+            </div>
+
+            {/* Toast */}
+            <div className={`toast ${toastOpen ? 'show' : ''}`} role="status" aria-live="polite">
+                {toastMsg}
             </div>
         </header>
     );

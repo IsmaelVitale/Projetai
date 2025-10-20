@@ -45,13 +45,22 @@ export function createProject(payload) {
     return http('/projects', { method: 'POST', body: payload });
 }
 
-export function updateProject(id, patch) {
-    return http(`/projects/${id}`, { method: 'PATCH', body: patch });
+// Buscar projeto por ID (além de by-code)
+export function fetchProjectById(projectId) {
+    return http(`/projects/${projectId}`, { method: 'GET' });
 }
 
-export function deleteProject(id) {
-    return http(`/projects/${id}`, { method: 'DELETE' });
+// Atualizar projeto (nome, descrição, dueDate)
+export function updateProject(projectId, data) {
+    // data pode conter: { name, description, dueDate }
+    return http(`/projects/${projectId}`, { method: 'PATCH', body: data });
 }
+
+// Excluir projeto
+export function deleteProject(projectId) {
+    return http(`/projects/${projectId}`, { method: 'DELETE' });
+}
+
 
 /* (Opcional) tarefas do projeto, se o backend expõe */
 export function fetchTasksByProject(projectId) {

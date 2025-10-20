@@ -17,22 +17,20 @@
 }
 
 .task-title {
+    margin: 0 0 .35rem 0;        /* dá espaço entre título e meta */
     font-weight: 700;
-    color: #0f172a;
-    font-size: 0.98rem;
-    line-height: 1.3;
-    margin-bottom: 6px;
-    word-break: break-word;
+    color: #1e293b;
+    font-size: .95rem;
+    line-height: 1.25rem;
 }
 
 /* ===== Meta (prioridade, prazo etc.) ===== */
 .task-meta {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 6px;
-    font-size: 0.78rem;
-    color: #475569;
+    align-items: center;
+    justify-content: space-between; /* separa as extremidades */
+    gap: .5rem;
+    margin-bottom: .5rem;           /* respiro antes da descrição */
 }
 .task-meta .due {
     padding: 2px 6px;
@@ -42,10 +40,33 @@
 }
 
 /* Prioridade (cores sutis) */
-.priority { font-weight: 600; }
-.priority.high { color: #b91c1c; }     /* vermelho */
-.priority.medium { color: #b45309; }   /* âmbar */
-.priority.low { color: #065f46; }      /* verde */
+.priority {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: .75rem;
+    font-weight: 600;
+    line-height: 1;
+    background: #eef2ff;
+    color: #4338ca;
+    border: 1px solid #c7d2fe;
+}
+.priority.high {
+    background: #fee2e2;
+    color: #b91c1c;
+    border-color: #fecaca;
+}
+.priority.medium {
+    background: #fef9c3;
+    color: #92400e;
+    border-color: #fde68a;
+}
+.priority.low {
+    background: #e2e8f0;
+    color: #334155;
+    border-color: #cbd5e1;
+}
 .priority.none { color: #64748b; }
 
 /* ===== Descrição/Detalhes (compatibilidade de classes) ===== */
@@ -105,5 +126,22 @@
     font-size: 0.75rem;
     color: #64748b;
     text-align: right;
+}
+.due {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-size: .75rem;
+    line-height: 1;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+/* Um respiro na prévia da descrição para não encostar na barra */
+.description-preview {
+    margin: .25rem 0 .5rem 0;
 }
 

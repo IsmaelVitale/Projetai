@@ -1,47 +1,33 @@
 .project-view-container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 2rem;
+    padding: 0 1.25em;
 }
 
 .project-header {
-    margin-bottom: 2rem;
-    padding-bottom: 2rem;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
     border-bottom: 1px solid #e2e8f0;
 }
 
 .project-header h1 {
-    margin: 0 0 0.5rem 0;
-    font-size: 2.5rem;
+    margin: 0 0 0.4rem 0;
+    font-size: clamp(1.4rem, 2.2vw + .4rem, 2.2rem);
     color: #1e293b;
 }
 
 .project-description {
-    font-size: 1.1rem;
+    font-size: 1rem;
     color: #475569;
-    margin: 0 0 1.5rem 0;
+    margin: 0 0 1rem 0;
     max-width: 80ch; /* Limita a largura do texto para melhor legibilidade */
 }
 
-.project-actions .details-btn {
-    background-color: #f1f5f9;
-    color: #475569;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 0.5rem 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: background-color 0.2s;
-}
-
-.project-actions .details-btn:hover {
-    background-color: #e2e8f0;
-}
-
+/* (removemos o botão "Ver Detalhes do Projeto" daqui; agora vem do Header) */
+.project-actions .details-btn { display:none; }
 
 .kanban-controls {
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
 }
 
 .new-task-btn {
@@ -63,27 +49,33 @@
 .kanban-board {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
+    gap: 1.25rem;
     align-items: stretch;   /* colunas com mesma altura */
 }
 
+.kanban-column {
+    padding: 10px;
+}
+.kanban-column-header h3 {
+    margin: 0 0 .5rem 0;
+}
 
-
-
-.loading-message, .error-message {
+.loading-message,
+.error-message {
     text-align: center;
     margin-top: 4rem;
     font-size: 1.2rem;
     color: #64748b;
 }
 
-/* --- [OTIMIZAÇÃO] Estilo para o card "fantasma" --- */
+/* --- Estilo para o card "fantasma" (DragOverlay) --- */
 .task-card.is-overlay {
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-    transform: scale(1.05); /* Efeito de "levantar" o card */
+    transform: scale(1.05);
     cursor: grabbing;
 }
 
+/* Responsivo por largura */
 @media (max-width: 1100px) {
     .kanban-board { grid-template-columns: repeat(2, 1fr); }
 }
@@ -91,3 +83,63 @@
     .kanban-board { grid-template-columns: 1fr; }
 }
 
+/* ====== “Modo notebook” — telas baixas (<= 800px) OU largura <= 1366px ====== */
+@media (max-height: 800px), (max-width: 1366px) {
+    .project-header {
+        margin-bottom: .75rem;
+        padding-bottom: .75rem;
+    }
+    .project-header h1 {
+        font-size: clamp(1.25rem, 1.6vw + .7rem, 1.8rem);
+    }
+    .project-description {
+        margin-bottom: .75rem;
+        font-size: .95rem;
+        /* mostra só 2 linhas para nunca empurrar o board pra baixo */
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .kanban-controls {
+        margin-bottom: .75rem;
+    }
+    .kanban-board {
+        gap: 1rem;
+    }
+    .kanban-column {
+        padding: 8px;
+    }
+}
+
+/* ====== Modo super compacto (telas bem baixas) ====== */
+@media (max-height: 800px) {
+    .project-header { margin-bottom: .6rem; padding-bottom: .6rem; }
+    .project-header h1 { font-size: clamp(1.2rem, 1.4vw + .6rem, 1.7rem); }
+    .project-description { -webkit-line-clamp: 1; } /* 1 linha */
+    .kanban-controls { margin-bottom: .6rem; }
+    .new-task-btn { padding: .6rem .95rem; font-size: .85rem; }
+    .kanban-board { gap: 1rem; }
+    .kanban-column { padding: 8px; }
+}
+
+@media (max-height: 720px) {
+    .project-description { display: none; } /* opcional: remover se quiser manter sempre */
+    .project-header { margin-bottom: .5rem; padding-bottom: .5rem; }
+    .kanban-board { gap: .9rem; }
+    .kanban-column { padding: 6px; }
+}
+
+/* Evita que textos longos “estiquem” o layout dos cards */
+.task-title,
+.description-preview {
+    word-break: break-word;
+}
+
+/* Garantia de largura/box do header e controles */
+.project-header,
+.project-actions,
+.kanban-controls {
+    max-width: 100%;
+    box-sizing: border-box;
+}

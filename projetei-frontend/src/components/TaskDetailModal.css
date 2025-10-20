@@ -1,205 +1,157 @@
 /* Importa estilos base reutilizáveis */
 @import './NewProjectModal.css';
 
+/* ===== Overlay/backdrop ===== */
 .modal-backdrop {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    position: fixed; inset: 0;
     background-color: rgba(0, 0, 0, 0.6);
-    display: flex; justify-content: center; align-items: center;
+    display: grid; place-items: center;
     z-index: 1000;
-    padding: 1rem;
+    padding: 16px; /* segura das bordas em telas pequenas */
 }
 
+/* ===== Caixa do modal ===== */
 .modal-content {
-    background-color: white;
+    background-color: #fff;
     border-radius: 12px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    width: 90%;
-    /* <<< LARGURA AUMENTADA */
-    max-width: 800px;
+    width: min(92vw, 820px);     /* antes: width:90% + max-width:800px */
+    max-width: 820px;
+    display: flex; flex-direction: column;
+    overflow: hidden;            /* p/ sticky funcionar certinho */
     animation: slide-down 0.3s ease-in-out;
-    display: flex;
-    flex-direction: column;
-    max-height: 90vh;
+
+    /* altura total controlada: cabe bem em 1366x768 */
+    max-height: calc(100vh - 96px); /* antes: 90vh */
 }
 
+/* ===== Cabeçalho / Rodapé “fixos” ===== */
+.modal-header,
+.modal-footer {
+    position: sticky; z-index: 1; background: #fff;
+}
+.modal-header { top: 0; border-bottom: 1px solid #e2e8f0; }
+.modal-footer { bottom: 0; border-top: 1px solid #e2e8f0; }
+
+/* ===== Header ===== */
 .modal-header {
-    padding: 1.5rem;
-    border-bottom: 1px solid #e2e8f0;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
+    padding: 1.25rem 1.5rem;      /* antes: 1.5rem 1.5rem */
+    display: flex; justify-content: space-between; align-items: flex-start;
     flex-shrink: 0;
 }
 
 .close-btn {
-    background: none; border: none; font-size: 1.75rem; line-height: 1; cursor: pointer; color: #94a3b8;
+    background: none; border: none; font-size: 1.5rem; line-height: 1;
+    cursor: pointer; color: #94a3b8;
+}
+.close-btn:hover { color: #334155; }
+
+/* Campo editável no título */
+.modal-header .editable-field { flex-grow: 1; margin-right: 1rem; }
+.modal-header .editable-text {
+    font-size: clamp(1.1rem, 1.2vw + .6rem, 1.5rem); /* antes: 1.5rem fixo */
+    font-weight: 600;
+    margin: 0;
+}
+.modal-header .modal-title-input {
+    font-size: clamp(1.1rem, 1.2vw + .6rem, 1.5rem);
+    font-weight: 600;
 }
 
+/* ===== Corpo com rolagem própria ===== */
 .modal-body {
-    padding: 1.5rem;
-    overflow-y: auto;
+    padding: 1.25rem 1.5rem;      /* antes: 1.5rem */
+    overflow: auto;               /* só o corpo rola */
 }
 
+/* ===== Grupos/grades ===== */
 .detail-group {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;       /* antes: 1.5rem */
     background-color: #f8fafc;
     border: 1px solid #f1f5f9;
     border-radius: 8px;
     overflow: hidden;
 }
+.detail-group:last-child { margin-bottom: 0; }
 
 .detail-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    display: flex; justify-content: space-between; align-items: center;
     padding: 0.5rem 0.75rem;
     background-color: #f1f5f9;
     border-bottom: 1px solid #e2e8f0;
 }
 .detail-header > label {
-    font-weight: 600;
-    color: #475569;
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    margin: 0;
+    font-weight: 600; color: #475569; font-size: 0.8rem; text-transform: uppercase; margin: 0;
 }
+.detail-content { padding: 0.75rem; }
 
-.detail-content {
-    padding: 0.75rem;
+.detail-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 0;
+    background: none; border: none; padding: 0;
 }
-
-.detail-group:last-child { margin-bottom: 0; }
-.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 0; background: none; border: none; padding: 0; }
 .detail-grid .detail-group { margin-bottom: 0; }
 
-
-/* --- ESTILOS UNIFICADOS PARA EDIÇÃO IN-LOCO --- */
-
+/* ===== Edição in-loco ===== */
 .editable-field {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    min-height: 38px;
-    width: 100%;
+    display: flex; align-items: center; gap: 0.75rem;
+    min-height: 38px; width: 100%;
 }
 .editable-text {
-    margin: 0;
-    padding: 0.2rem 0;
-    flex-grow: 1;
-    white-space: pre-wrap;
-    word-break: break-word;
-    color: #1e2d3b;
+    margin: 0; padding: 0.2rem 0; flex-grow: 1;
+    white-space: pre-wrap; word-break: break-word; color: #1e2d3b;
 }
 
-.modal-header .editable-field { flex-grow: 1; margin-right: 1rem; }
-.modal-header .editable-text { font-size: 1.5rem; font-weight: 600; }
-.modal-header .modal-title-input { font-size: 1.5rem; font-weight: 600; }
-
-.editable-field input, .editable-field textarea, .editable-field select, .priority-select {
-    width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; box-sizing: border-box; font-family: inherit; background-color: #ffffff;
+.editable-field input,
+.editable-field textarea,
+.editable-field select,
+.priority-select {
+    width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 6px;
+    font-size: 1rem; box-sizing: border-box; font-family: inherit; background-color: #fff;
 }
 .editable-field textarea { resize: vertical; min-height: 80px; }
 
+/* Ações (editar/salvar/cancelar) */
+.action-btn { background: none; border: none; cursor: pointer; font-size: 0.9rem;
+    color: #94a3b8; padding: 5px; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+.action-btn:hover { background-color: #e2e8f0; }
+.editable-field .edit-btn, .comment-body .edit-btn { visibility: hidden; opacity: 0; transition: opacity .2s; }
+.editable-field:hover .edit-btn, .comment-body:hover .edit-btn { visibility: visible; opacity: 1; }
+.save-btn { color: #22c55e; } .cancel-btn { color: #ef4444; }
+.delete-item-btn { color: #94a3b8; } .delete-item-btn:hover { color: #ef4444; }
 
-.action-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 0.9rem;
-    color: #94a3b8;
-    padding: 5px;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.action-btn:hover {
-    background-color: #e2e8f0;
-}
-
-.editable-field .edit-btn,
-.comment-body .edit-btn {
-    visibility: hidden;
-    opacity: 0;
-    transition: opacity 0.2s ease-in-out;
-}
-
-.editable-field:hover .edit-btn,
-.comment-body:hover .edit-btn {
-    visibility: visible;
-    opacity: 1;
-}
-
-.save-btn { color: #22c55e; }
-.cancel-btn { color: #ef4444; }
-.delete-item-btn { color: #94a3b8; }
-.delete-item-btn:hover { color: #ef4444; }
-
-
-/* Checklist */
-.checklist-section {
-    padding: 0;
-    background-color: #f8fafc;
-    border: 1px solid #f1f5f9;
-    border-radius: 8px;
-    overflow: hidden;
-    margin-top: 1.5rem;
-}
-
-.checklist-section > .detail-header {
-    /* O padding já é herdado de .detail-header, sem necessidade de estilo extra */
-}
-
-/* O espaçamento agora é controlado pelo .detail-content, então essa regra não é mais necessária */
-/*.checklist-list { margin-top: 0.75rem; } */
-
-
+/* ===== Checklist ===== */
+.checklist-section { padding: 0; background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 8px; overflow: hidden; margin-top: 1.25rem; }
 .checklist-section > .detail-header > label { margin-bottom: 0; }
 .checklist-list { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem; }
 
 .checklist-item-view {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    position: relative;
-    padding: 0.5rem 0.75rem;
-    background-color: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
+    display: flex; align-items: center; gap: 0.75rem; position: relative;
+    padding: 0.5rem 0.75rem; background-color: #fff; border: 1px solid #e2e8f0; border-radius: 6px;
 }
 .checklist-item-view input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; }
 .checklist-item-view label { flex-grow: 1; font-weight: normal; color: #334155; }
 .checklist-item-view label.checked { text-decoration: line-through; color: #94a3b8; }
 
 .checklist-item-view .item-actions {
-    /* <<< ALTERAÇÃO AQUI */
-    display: flex; /* Mantém o layout estável */
-    align-items: center;
-    gap: 0.25rem;
-    visibility: hidden; /* Esconde visualmente */
-    opacity: 0;         /* Deixa transparente */
-    transition: opacity 0.2s ease-in-out;
+    display: flex; align-items: center; gap: 0.25rem;
+    visibility: hidden; opacity: 0; transition: opacity .2s;
 }
-.checklist-item-view:hover .item-actions {
-    /* <<< E AQUI */
-    visibility: visible; /* Mostra no hover */
-    opacity: 1;
-}
+.checklist-item-view:hover .item-actions { visibility: visible; opacity: 1; }
 
 .checklist-edit-input { flex-grow: 1; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; padding: 4px; }
 
 .add-item-form { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
-.add-item-form input { flex-grow: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.5rem; background-color: #ffffff; }
+.add-item-form input { flex-grow: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.5rem; background-color: #fff; }
 .add-item-form button {
     background-color: #e2e8f0; border: none; border-radius: 6px; font-size: 1.2rem;
     font-weight: bold; cursor: pointer; width: 38px; height: 38px;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 
-/* Comentários */
-.comments-section { padding-top: 1.5rem; border-top: 1px solid #e2e8f0; }
+/* ===== Comentários ===== */
+.comments-section { padding-top: 1.25rem; border-top: 1px solid #e2e8f0; }
 .comments-section > label { display: block; font-weight: 600; margin-bottom: 0.75rem; color: #475569; font-size: 0.8rem; text-transform: uppercase; }
-.comments-list { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem; }
+.comments-list { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.25rem; }
 .no-comments { color: #64748b; padding: 0.75rem; }
 
 .comment { background-color: #f8fafc; border-radius: 8px; border: 1px solid #f1f5f9; overflow: hidden; }
@@ -208,86 +160,57 @@
 .comment-header span { font-size: 0.75rem; color: #64748b; }
 
 .comment-body {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding: 0.75rem;
-    gap: 0.5rem;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 0.75rem; gap: 0.5rem;
 }
+.comment-body p { margin: 0; flex-grow: 1; color: #475569; font-size: 0.9rem; white-space: pre-wrap; word-break: break-word; }
 
-.comment-body p {
-    margin: 0;
-    flex-grow: 1;
-    color: #475569;
-    font-size: 0.9rem;
-    white-space: pre-wrap;
-    word-break: break-word;
-}
-
-.comment-actions {
-    display: flex;
-    gap: 0.5rem;
-    visibility: hidden;
-    opacity: 0;
-    transition: opacity 0.2s;
-}
-
-.comment-body:hover .comment-actions {
-    visibility: visible;
-    opacity: 1;
-}
+.comment-actions { display: flex; gap: 0.5rem; visibility: hidden; opacity: 0; transition: opacity .2s; }
+.comment-body:hover .comment-actions { visibility: visible; opacity: 1; }
 
 .comment-edit-form { padding: 0.75rem; }
-.comment-edit-form textarea {
-    width: 100%;
-    box-sizing: border-box; /* Garante que padding e borda não aumentem a largura total */
-    resize: vertical;
-    min-height: 80px;
-}
+.comment-edit-form textarea { width: 100%; box-sizing: border-box; resize: vertical; min-height: 80px; }
 .comment-edit-actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
 .btn-sm { padding: 0.3rem 0.8rem; font-size: 0.8rem; }
 
 .comment-form { display: flex; flex-direction: column; }
-
 .comment-form textarea {
-    width: 100%;
-    min-height: 80px;
-    margin-bottom: 0.75rem;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    padding: 0.75rem;
-    font-family: inherit;
-    box-sizing: border-box;
+    width: 100%; min-height: 80px; margin-bottom: 0.75rem;
+    border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.75rem; font-family: inherit; box-sizing: border-box;
 }
 .comment-form button { align-self: flex-end; }
 
+/* ===== Footer ===== */
 .modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    padding-top: 1rem;
-    border-top: 1px solid #e2e8f0;
-    margin-top: 1rem;
+    display: flex; justify-content: flex-end;
+    padding: 0.9rem 1.5rem; /* antes: padding-top + margin-top separados */
 }
-
 .danger-btn {
-    background: #ef4444;
-    color: white;
-    border: none;
-    padding: 0.6rem 1.2rem;
-    border-radius: 8px;
-    font-weight: bold;
-    cursor: pointer;
+    background: #ef4444; color: #fff; border: none;
+    padding: 0.6rem 1.2rem; border-radius: 8px; font-weight: bold; cursor: pointer;
 }
+.danger-btn:hover { background: #dc2626; }
 
-.danger-btn:hover {
-    background: #dc2626;
-}
-
-
+/* ===== Animação ===== */
 @keyframes slide-down {
     from { transform: translateY(-20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+    to   { transform: translateY(0);     opacity: 1; }
 }
 
+/* ===== Modo notebook (telas baixas) ===== */
+@media (max-height: 800px) {
+    .modal-content { max-width: 780px; max-height: calc(100vh - 72px); }
+    .modal-header { padding: 1rem 1.25rem; }
+    .modal-body   { padding: 1rem 1.25rem; }
+    .modal-footer { padding: 0.75rem 1.25rem; }
+    .modal-header .editable-text,
+    .modal-header .modal-title-input { font-size: clamp(1rem, 1.1vw + .55rem, 1.35rem); }
+}
 
+/* ===== Telas bem baixas ===== */
+@media (max-height: 700px) {
+    .modal-content { max-width: 760px; max-height: calc(100vh - 56px); }
+}
 
+/* Garantias de quebra e box-model */
+.modal-content * { box-sizing: border-box; }

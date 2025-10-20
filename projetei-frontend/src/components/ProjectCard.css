@@ -1,5 +1,10 @@
+.project-card-link {
+    text-decoration: none;
+    color: inherit;
+}
+
 .project-card {
-    background-color: white;
+    background-color: #fff;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
     padding: 1.5rem;
@@ -7,68 +12,89 @@
     transition: transform 0.2s, box-shadow 0.2s;
     cursor: pointer;
 }
-
 .project-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
 }
 
+/* Header: título + código (com copiar) */
 .card-header {
     display: flex;
+    align-items: center;
     justify-content: space-between;
-    align-items: flex-start;
+    gap: .5rem;
     margin-bottom: 1rem;
 }
-
 .card-header h3 {
     margin: 0;
     font-size: 1.2rem;
     color: #1e293b;
 }
-
-.card-header span {
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 0.8rem;
-    background-color: #f1f5f9;
-    color: #64748b;
-    padding: 0.2rem 0.5rem;
-    border-radius: 6px;
+.card-code {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
 }
 
+/* Código (pílula) */
+.code-pill {
+    background: #eef2ff;
+    color: #4338ca;
+    border: 1px solid #c7d2fe;
+    border-radius: 999px;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+/* Botão copiar (seu padrão) */
+.icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;        /* tamanho fixo */
+    height: 30px;
+    border: none;       /* sem borda */
+    background: none;   /* sem fundo */
+    cursor: pointer;
+    padding: 0;
+    border-radius: 8px; /* arredondado */
+    transition: background-color .2s;
+}
+.icon-btn:hover { background: #f1f5f9; }
+.icon-btn svg { pointer-events: none; }
+
+/* Descrição */
 .card-description {
     font-size: 0.9rem;
     color: #475569;
     margin: 0 0 1.5rem 0;
-    min-height: 40px; /* Para manter os cards alinhados */
+    min-height: 40px; /* mantém cards alinhados mesmo com textos diferentes */
 }
 
-.card-footer {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
+/* Rodapé — progresso idêntico ao TaskCard */
+.card-footer { display: flex; align-items: center; gap: 1rem; }
 
-.progress-bar-container {
-    flex-grow: 1;
-    height: 8px;
-    background-color: #e2e8f0;
-    border-radius: 4px;
+.task-progress { width: 100%; }
+.task-progress-track {
+    width: 100%;
+    height: 6px;
+    background: #f1f5f9;
+    border-radius: 999px;
     overflow: hidden;
+    border: 1px solid #e2e8f0;
 }
-
-.progress-bar {
+.task-progress-fill {
     height: 100%;
-    background-color: #2563eb;
-    border-radius: 4px;
+    width: 0%;
+    background: #2563eb;
+    border-radius: 999px;
+    transition: width 0.2s ease;
 }
-
-.progress-text {
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: #475569;
-}
-
-.project-card-link {
-    text-decoration: none;
-    color: inherit;
+.task-progress-count {
+    margin-top: 4px;
+    font-size: 0.75rem;
+    color: #64748b;
+    text-align: right;
 }
