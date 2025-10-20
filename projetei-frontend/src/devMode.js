@@ -19,17 +19,21 @@ export function isDevMode() {
 }
 
 export function activateDevMode() {
-    if (!DEV_PASS) return; // desativado por env
+    if (!DEV_PASS) return;
     localStorage.setItem(DEV_MODE_KEY, '1');
     window.dispatchEvent(new Event('devmode:changed'));
+    window.dispatchEvent(new Event('dashboard:refresh'));   // <— NOVO
     window.dispatchEvent(new CustomEvent('ui:toast', { detail: { message: 'Modo desenvolvedor ativado.' } }));
 }
 
 export function deactivateDevMode() {
     localStorage.removeItem(DEV_MODE_KEY);
     window.dispatchEvent(new Event('devmode:changed'));
+    window.dispatchEvent(new Event('dashboard:show-mine')); // <— NOVO (garante troca imediata)
+    window.dispatchEvent(new Event('dashboard:refresh'));   // <— NOVO (força recomputar lista)
     window.dispatchEvent(new CustomEvent('ui:toast', { detail: { message: 'Modo desenvolvedor desativado.' } }));
 }
+
 
 /**
  * Tenta ativar/desativar dev mode a partir de um token digitado na busca.

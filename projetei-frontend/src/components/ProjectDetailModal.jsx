@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ConfirmModal from './ConfirmModal.jsx';
 import './TaskDetailModal.css';
 import { FaPencilAlt, FaCheck, FaTimes } from 'react-icons/fa';
 import { updateProject, deleteProject } from '../services/apiService';
@@ -54,6 +55,10 @@ export default function ProjectDetailModal({
     const [tempValue, setTempValue] = useState('');
     const isLookup = mode === 'lookup';
 
+    // ConfirmModal state
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+
     if (!project) return null;
 
     const handleEditClick = (field, value) => {
@@ -85,24 +90,34 @@ export default function ProjectDetailModal({
         }
     };
 
-    const handleDelete = async () => {
-        const ok = window.confirm(
-            'Tem certeza que deseja excluir este projeto? Esta ação não pode ser desfeita.'
-        );
-        if (!ok) return;
+    // Abre o confirm
+    const handleDeleteClick = () => setConfirmOpen(true);
+
+    // Confirma exclusão
+    const confirmDelete = async () => {
         try {
-            await deleteProject(project.id);
-            onProjectDeleted?.();
+            setDeleting(true);
+            await deleteProject(project.id); // 204 (sem body)
+            onProjectDeleted?.(project.id || project.code);
             window.dispatchEvent(new Event('projects:changed'));
         } catch (err) {
             console.error('Erro ao excluir projeto:', err);
-            alert('Não foi possível excluir o projeto.');
+            window.dispatchEvent(new CustomEvent('ui:toast', {
+                detail: { message: 'Não foi possível excluir o projeto.' }
+            }));
+        } finally {
+            setDeleting(false);
+            setConfirmOpen(false);
         }
     };
 
-    const handleAddToMine = () => {
+    // Salvar nos Meus Projetos (modo lookup)
+    const handleAddToMyProjects = () => {
         saveToMyProjects(project);
-        onClose?.(); // fecha o modal após adicionar
+        window.dispatchEvent(new CustomEvent('ui:toast', {
+            detail: { message: 'Projeto adicionado aos seus projetos.' }
+        }));
+        onClose?.();
     };
 
     const renderEditableField = (field, label, value, inputType = 'input') => {
@@ -170,89 +185,103 @@ export default function ProjectDetailModal({
     const stop = (e) => e.stopPropagation();
 
     return (
-        <div className="modal-backdrop" onClick={onClose}>
-            <div className="modal-content" role="dialog" aria-modal="true" onClick={stop}>
-                {/* Header */}
-                <div className="modal-header">
-                    {editingField === 'name' ? (
-                        <div className="editable-field">
-                            <input
-                                type="text"
-                                value={tempValue}
-                                onChange={(e) => setTempValue(e.target.value)}
-                                autoFocus
-                                className="modal-title-input"
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') handleSave();
-                                    if (e.key === 'Escape') handleCancelEdit();
-                                }}
-                            />
-                            <button onClick={handleSave} className="action-btn save-btn">
-                                <FaCheck />
-                            </button>
-                            <button onClick={handleCancelEdit} className="action-btn cancel-btn">
-                                <FaTimes />
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="editable-field">
-                            <h3 className="editable-text">{project.name || 'Projeto sem nome'}</h3>
-                            <button
-                                onClick={() => handleEditClick('name', project.name)}
-                                className="action-btn edit-btn"
-                            >
-                                <FaPencilAlt />
-                            </button>
-                        </div>
-                    )}
-                    <button className="close-btn" onClick={onClose} aria-label="Fechar">
-                        ×
-                    </button>
-                </div>
-
-                {/* Body */}
-                <div className="modal-body">
-                    <div className="detail-grid">
-                        {renderEditableField('dueDate', 'Data de Entrega', isoForDateInput(project.dueDate), 'date')}
-
-                        {/* Código do projeto: somente leitura */}
-                        <div className="detail-group">
-                            <div className="detail-header">
-                                <label>Código do Projeto</label>
+        <>
+            <div className="modal-backdrop" onClick={onClose}>
+                <div className="modal-content" role="dialog" aria-modal="true" onClick={stop}>
+                    {/* Header */}
+                    <div className="modal-header">
+                        {editingField === 'name' ? (
+                            <div className="editable-field">
+                                <input
+                                    type="text"
+                                    value={tempValue}
+                                    onChange={(e) => setTempValue(e.target.value)}
+                                    autoFocus
+                                    className="modal-title-input"
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleSave();
+                                        if (e.key === 'Escape') handleCancelEdit();
+                                    }}
+                                />
+                                <button onClick={handleSave} className="action-btn save-btn">
+                                    <FaCheck />
+                                </button>
+                                <button onClick={handleCancelEdit} className="action-btn cancel-btn">
+                                    <FaTimes />
+                                </button>
                             </div>
-                            <div className="detail-content">
-                                <div className="editable-field">
-                                    <p className="editable-text">{project.code || '—'}</p>
+                        ) : (
+                            <div className="editable-field">
+                                <h3 className="editable-text">{project.name || 'Projeto sem nome'}</h3>
+                                <button
+                                    onClick={() => handleEditClick('name', project.name)}
+                                    className="action-btn edit-btn"
+                                >
+                                    <FaPencilAlt />
+                                </button>
+                            </div>
+                        )}
+                        <button className="close-btn" onClick={onClose} aria-label="Fechar">
+                            ×
+                        </button>
+                    </div>
+
+                    {/* Body */}
+                    <div className="modal-body">
+                        <div className="detail-grid">
+                            {renderEditableField('dueDate', 'Data de Entrega', isoForDateInput(project.dueDate), 'date')}
+
+                            {/* Código do projeto: somente leitura */}
+                            <div className="detail-group">
+                                <div className="detail-header">
+                                    <label>Código do Projeto</label>
+                                </div>
+                                <div className="detail-content">
+                                    <div className="editable-field">
+                                        <p className="editable-text">{project.code || '—'}</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+
+                        {renderEditableField('description', 'Descrição', project.description, 'textarea')}
                     </div>
 
-                    {renderEditableField('description', 'Descrição', project.description, 'textarea')}
-                </div>
-
-                {/* Footer */}
-                <div className="modal-footer" style={{ gap: 8 }}>
-                    {isLookup ? (
-                        <>
-                            <button type="button" className="header-action-btn" onClick={onClose}>
-                                Cancelar
+                    {/* Footer */}
+                    <div className="modal-footer" style={{ gap: 8 }}>
+                        {isLookup ? (
+                            <>
+                                <button type="button" className="header-action-btn" onClick={onClose}>
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="button"
+                                    className="header-action-btn primary"
+                                    onClick={handleAddToMyProjects}
+                                >
+                                    Adicionar aos Meus Projetos
+                                </button>
+                            </>
+                        ) : (
+                            <button className="danger-btn" onClick={handleDeleteClick}>
+                                🗑 Excluir Projeto
                             </button>
-                            <button
-                                type="button"
-                                className="header-action-btn primary"
-                                onClick={handleAddToMine}
-                            >
-                                Adicionar aos Meus Projetos
-                            </button>
-                        </>
-                    ) : (
-                        <button className="danger-btn" onClick={handleDelete}>
-                            🗑 Excluir Projeto
-                        </button>
-                    )}
+                        )}
+                    </div>
                 </div>
             </div>
-        </div>
+
+            {/* Confirm de exclusão */}
+            <ConfirmModal
+                open={confirmOpen}
+                title="Excluir projeto?"
+                message="Esta ação não pode ser desfeita. O projeto será excluido permanentemente!"
+                confirmText={deleting ? 'Excluindo…' : 'Excluir'}
+                cancelText="Cancelar"
+                variant="danger"
+                onConfirm={confirmDelete}
+                onCancel={() => setConfirmOpen(false)}
+            />
+        </>
     );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ProjectCard from '../components/ProjectCard.jsx';
+import { isDevMode } from '../devMode';
 import './Dashboard.css';
 
 const MY_KEY = 'projetei.myProjects';
@@ -11,7 +12,6 @@ function looksLikeCode(q) {
     return /^[A-Za-z0-9_-]{4,}$/.test(v);
 }
 
-/** Lê do localStorage e devolve um Set com codes/ids salvos pelo usuário */
 function readMyProjectsKeys() {
     try {
         const raw = localStorage.getItem(MY_KEY);
@@ -27,32 +27,39 @@ function readMyProjectsKeys() {
 }
 
 export default function Dashboard({ projects }) {
-    const [filterMode, setFilterMode] = useState('all'); // 'all' | 'mine'
-    const [myVersion, setMyVersion] = useState(0);       // força re-render ao mudar localStorage
-    const [searchName, setSearchName] = useState('');    // busca por NOME (vinda do Header)
+    const [devMode, setDevMode] = useState(isDevMode());
+    const [filterMode, setFilterMode] = useState('mine'); // padrão = mine
+    const [myVersion, setMyVersion] = useState(0);
+    const [searchName, setSearchName] = useState('');
+    const [refreshTick, setRefreshTick] = useState(0);
 
-    // Para não repetir toast na mesma consulta
+
     const lastToastQ = useRef('');
 
-    // 1) Botão “Meus Projetos” no Header
+    useEffect(() => {
+        const onDev = () => {
+            setDevMode(isDevMode());
+            if (!isDevMode()) setFilterMode('mine'); // ao sair do dev, volta para 'mine'
+        };
+        window.addEventListener('devmode:changed', onDev);
+        return () => window.removeEventListener('devmode:changed', onDev);
+    }, []);
+
     useEffect(() => {
         const showMine = () => setFilterMode('mine');
         window.addEventListener('dashboard:show-mine', showMine);
         return () => window.removeEventListener('dashboard:show-mine', showMine);
     }, []);
 
-    // 2) Busca por NOME enviada pelo Header (tempo real)
     useEffect(() => {
         const onSearchByName = (e) => {
             const q = String(e.detail?.q ?? '');
             setSearchName(q);
-            // NÃO alteramos filterMode aqui (respeita o modo atual do usuário)
         };
         window.addEventListener('dashboard:search-name', onSearchByName);
         return () => window.removeEventListener('dashboard:search-name', onSearchByName);
     }, []);
 
-    // 3) Mudanças no localStorage (ex.: adicionar/remover “Meus Projetos”)
     useEffect(() => {
         const onStorage = (e) => {
             if (e.key === MY_KEY) setMyVersion((v) => v + 1);
@@ -61,14 +68,31 @@ export default function Dashboard({ projects }) {
         return () => window.removeEventListener('storage', onStorage);
     }, []);
 
-    // 4) Qualquer lugar do app que disparar projects:changed
     useEffect(() => {
         const bump = () => setMyVersion((v) => v + 1);
         window.addEventListener('projects:changed', bump);
         return () => window.removeEventListener('projects:changed', bump);
     }, []);
 
-    // Contagens
+    useEffect(() => {
+        const onDev = () => {
+            setDevMode(isDevMode());
+            setFilterMode('mine');  // já tinha
+            setSearchName('');      // <— NOVO: limpa busca que podia esconder sua lista
+            setRefreshTick(t => t + 1); // <— NOVO: força recomputar memo
+        };
+        window.addEventListener('devmode:changed', onDev);
+        return () => window.removeEventListener('devmode:changed', onDev);
+    }, []);
+
+    useEffect(() => {
+        const onRefresh = () => setRefreshTick(t => t + 1);
+        window.addEventListener('dashboard:refresh', onRefresh);
+        return () => window.removeEventListener('dashboard:refresh', onRefresh);
+    }, []);
+
+
+
     const totalCount = projects?.length ?? 0;
 
     const mineCount = useMemo(() => {
@@ -76,22 +100,21 @@ export default function Dashboard({ projects }) {
         return (projects || []).filter(
             (p) => keys.has(String(p?.code ?? '')) || keys.has(String(p?.id ?? ''))
         ).length;
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [projects, myVersion]);
 
-    // Filtro em memória
+    // Fora do dev, o modo efetivo é sempre 'mine'
+    const effectiveMode = devMode ? filterMode : 'mine';
+
     const visibleProjects = useMemo(() => {
         let list = projects || [];
 
-        // “Meus Projetos”
-        if (filterMode === 'mine') {
+        if (effectiveMode === 'mine') {
             const keys = readMyProjectsKeys();
             list = list.filter(
                 (p) => keys.has(String(p?.code ?? '')) || keys.has(String(p?.id ?? ''))
             );
         }
 
-        // Busca por NOME (quando houver)
         const q = String(searchName || '').trim();
         if (q && !looksLikeCode(q)) {
             const ql = q.toLowerCase();
@@ -99,8 +122,7 @@ export default function Dashboard({ projects }) {
         }
 
         return list;
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [projects, filterMode, searchName, myVersion]);
+    }, [projects, effectiveMode, searchName, myVersion, refreshTick]);
 
     // Toast quando a busca por NOME não encontra nada
     useEffect(() => {
@@ -110,7 +132,6 @@ export default function Dashboard({ projects }) {
             return;
         }
         if (looksLikeCode(q)) {
-            // caso "código" é tratado no Header (submit)
             lastToastQ.current = '';
             return;
         }
@@ -124,27 +145,29 @@ export default function Dashboard({ projects }) {
 
     return (
         <div className="dashboard-container">
-            {/* Controles superiores */}
-            <div className="dashboard-controls">
-                <div className="filters">
-                    <button
-                        type="button"
-                        className={`filter-btn ${filterMode === 'all' ? 'active' : ''}`}
-                        onClick={() => setFilterMode('all')}
-                        aria-pressed={filterMode === 'all'}
-                    >
-                        Todos ({totalCount})
-                    </button>
-                    <button
-                        type="button"
-                        className={`filter-btn ${filterMode === 'mine' ? 'active' : ''}`}
-                        onClick={() => setFilterMode('mine')}
-                        aria-pressed={filterMode === 'mine'}
-                    >
-                        Meus Projetos ({mineCount})
-                    </button>
+            {/* Controles — aparecem só no modo dev */}
+            {devMode && (
+                <div className="dashboard-controls">
+                    <div className="filters">
+                        <button
+                            type="button"
+                            className={`filter-btn ${effectiveMode === 'all' ? 'active' : ''}`}
+                            onClick={() => setFilterMode('all')}
+                            aria-pressed={effectiveMode === 'all'}
+                        >
+                            Todos ({totalCount})
+                        </button>
+                        <button
+                            type="button"
+                            className={`filter-btn ${effectiveMode === 'mine' ? 'active' : ''}`}
+                            onClick={() => setFilterMode('mine')}
+                            aria-pressed={effectiveMode === 'mine'}
+                        >
+                            Meus Projetos ({mineCount})
+                        </button>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {visibleProjects.length > 0 ? (
                 <div className="projects-grid">
@@ -154,7 +177,7 @@ export default function Dashboard({ projects }) {
                 </div>
             ) : (
                 <p className="dash-empty">
-                    {filterMode === 'mine'
+                    {effectiveMode === 'mine'
                         ? (searchName
                             ? 'Nenhum projeto dos seus favoritos corresponde à busca.'
                             : 'Você ainda não adicionou projetos aos seus favoritos.')

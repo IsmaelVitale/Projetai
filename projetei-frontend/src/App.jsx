@@ -7,6 +7,8 @@ import NewProjectModal from './components/NewProjectModal.jsx';
 import ProjectView from './pages/ProjectView.jsx';
 import ProjectDetailModal from './components/ProjectDetailModal.jsx';
 import { fetchProjects, createProject } from './services/apiService.js';
+import { saveToMyProjects } from './utils/myProjects.js';
+
 
 function App() {
     const [projects, setProjects] = useState([]);
@@ -69,6 +71,7 @@ function App() {
         if (newProject) {
             handleCloseModal();
             loadProjects();
+            saveToMyProjects(newProject);
         } else {
             alert('Não foi possível criar o projeto.');
         }

@@ -1,0 +1,47 @@
+.confirm-backdrop {
+    position: fixed; inset: 0; z-index: 1100;
+    background: rgba(0,0,0,.55);
+    display: flex; align-items: center; justify-content: center;
+    padding: 1rem;
+}
+.confirm-card {
+    width: 100%;
+    max-width: 420px;
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 20px 30px rgba(0,0,0,.15);
+    overflow: hidden;
+    animation: cm-slide .18s ease-out;
+}
+@keyframes cm-slide { from { transform: translateY(-6px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.confirm-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .9rem 1rem; border-bottom: 1px solid #e2e8f0;
+}
+.confirm-header h3 { margin: 0; font-size: 1.05rem; color: #1e293b; }
+.confirm-close {
+    border: none; background: transparent; font-size: 1.4rem; line-height: 1;
+    color: #94a3b8; cursor: pointer; border-radius: 8px; padding: .1rem .4rem;
+}
+.confirm-close:hover { background: #f1f5f9; }
+
+.confirm-body { padding: 1rem; color: #475569; }
+
+.confirm-footer {
+    display: flex; justify-content: flex-end; gap: .5rem;
+    padding: .8rem 1rem; border-top: 1px solid #e2e8f0;
+}
+
+.btn {
+    border: none; cursor: pointer; border-radius: 8px; padding: .5rem .8rem;
+    font-weight: 600; transition: background .15s ease, transform .02s;
+}
+.btn:active { transform: translateY(1px); }
+.btn.light { background: #f1f5f9; color: #334155; }
+.btn.light:hover { background: #e2e8f0; }
+.btn.default { background: #2563eb; color: #fff; }
+.btn.default:hover { background: #1d4ed8; }
+.btn.danger { background: #ef4444; color: #fff; }
+.btn.danger:hover { background: #dc2626; }

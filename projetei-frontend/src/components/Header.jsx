@@ -2,12 +2,13 @@ import './Header.css';
 import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { fetchProjectByCode } from '../services/apiService';
+import { tryActivateDevMode } from '../devMode';
 
 function looksLikeCode(q) {
     const v = String(q || '').trim();
     if (!v) return false;
-    if (/\s/.test(v)) return false;               // não pode ter espaço
-    return /^[A-Za-z0-9_-]{4,}$/.test(v);         // ajuste caso seu padrão mude
+    if (/\s/.test(v)) return false;
+    return /^[A-Za-z0-9_-]{4,}$/.test(v);
 }
 
 function Header({ onNewProjectClick, isProjectView, projectCode }) {
@@ -27,7 +28,7 @@ function Header({ onNewProjectClick, isProjectView, projectCode }) {
         (showToast)._t = window.setTimeout(() => setToastOpen(false), 2500);
     };
 
-    // Ouve toasts globais (ex.: Dashboard dispara quando a busca por NOME não encontra nada)
+    // Ouve toasts globais
     useEffect(() => {
         const onToast = (e) => {
             const message = e.detail?.message || e.detail || 'Esse projeto não existe.';
@@ -41,12 +42,8 @@ function Header({ onNewProjectClick, isProjectView, projectCode }) {
         const ref = document.referrer || '';
         let sameOrigin = false;
         try { sameOrigin = ref && new URL(ref).origin === window.location.origin; } catch {}
-        // Só usa histórico se a origem for a mesma (não sai do site)
-        if (sameOrigin && window.history.length > 1) {
-            navigate(-1);
-        } else {
-            navigate('/'); // fallback seguro: Dashboard
-        }
+        if (sameOrigin && window.history.length > 1) navigate(-1);
+        else navigate('/');
     };
 
     const goMyProjects = () => {
@@ -55,79 +52,68 @@ function Header({ onNewProjectClick, isProjectView, projectCode }) {
     };
 
     const openProjectDetails = () => {
-        // ProjectView já escuta esse evento e abre o modal de detalhes (modo normal)
         window.dispatchEvent(new Event('project:open-details'));
     };
 
-    // Busca por NOME em tempo real (filtra na Dashboard)
+    // Busca por nome em tempo real
     const handleChange = (e) => {
         const q = e.target.value;
         setQuery(q);
-        // só filtra por nome; submit/Enter cuida do caso de CÓDIGO
         window.dispatchEvent(new CustomEvent('dashboard:search-name', { detail: { q } }));
     };
 
-    // Submit: se for CÓDIGO, busca via API e abre modal em modo "lookup"
+    // Submit: antes de tudo, tenta ativar/desativar MODO DEV; depois trata código
     const handleSearch = async (e) => {
         e.preventDefault();
         const q = query.trim();
         if (!q) return;
 
-        if (!looksLikeCode(q)) {
-            // Nome: já filtramos em tempo real; sem submit necessário.
-            // Se quiser forçar um feedback imediato, a Dashboard emitirá toast se não houver nenhum match.
-            return;
+        // 1) Modo Dev (senha ou "dev:off")
+        const toggled = tryActivateDevMode(q);
+        if (toggled) {
+            setQuery('');
+            return; // não prossegue para busca
         }
 
-        try {
-            setSearching(true);
-            const found = await fetchProjectByCode(q);
-            if (!found) {
-                showToast('Esse projeto não existe.');
-                return;
+        // 2) Código → abre modal
+        if (looksLikeCode(q)) {
+            try {
+                setSearching(true);
+                const found = await fetchProjectByCode(q);
+                if (!found) {
+                    showToast('Esse projeto não existe.');
+                    return;
+                }
+                window.dispatchEvent(
+                    new CustomEvent('project:open-modal', { detail: { project: found, mode: 'lookup' } })
+                );
+            } catch (err) {
+                console.error('Erro ao buscar projeto por código:', err);
+                showToast('Não foi possível buscar o projeto.');
+            } finally {
+                setSearching(false);
             }
-            // App abrirá o modal em modo lookup
-            window.dispatchEvent(
-                new CustomEvent('project:open-modal', { detail: { project: found, mode: 'lookup' } })
-            );
-        } catch (err) {
-            console.error('Erro ao buscar projeto por código:', err);
-            showToast('Não foi possível buscar o projeto.');
-        } finally {
-            setSearching(false);
         }
+        // Observação: busca por NOME já é tempo real; submit não faz nada nesse caso.
     };
 
     return (
         <header className="app-header">
             <div className="header-content">
-                {/* ESQUERDA: Projetaí → Voltar → Meus Projetos */}
+                {/* ESQUERDA */}
                 <div className="header-left">
                     <Link to="/" className="header-title-link">
                         <h2>Projetaí</h2>
                     </Link>
 
-                    <button
-                        type="button"
-                        className="header-action-btn"
-                        onClick={goBack}
-                        aria-label="Voltar"
-                        title="Voltar"
-                    >
+                    <button type="button" className="header-action-btn" onClick={goBack} title="Voltar">
                         ← Voltar
                     </button>
 
-                    <button
-                        type="button"
-                        className="header-action-btn"
-                        onClick={goMyProjects}
-                        aria-label="Meus Projetos"
-                        title="Meus Projetos"
-                    >
+                    <button type="button" className="header-action-btn" onClick={goMyProjects} title="Meus Projetos">
                         Meus Projetos
                     </button>
 
-                    {/* depois */}
                     {isProjectView && projectCode && (
                         <div className="project-code-wrap">
                             <span className="header-project-code">{projectCode}</span>
@@ -139,14 +125,12 @@ function Header({ onNewProjectClick, isProjectView, projectCode }) {
                                 onClick={async () => {
                                     try {
                                         await navigator.clipboard.writeText(projectCode);
-                                        // usa o toast que já existe no Header
                                         window.dispatchEvent(new CustomEvent('ui:toast', { detail: { message: 'Código copiado!' } }));
                                     } catch {
                                         window.dispatchEvent(new CustomEvent('ui:toast', { detail: { message: 'Não foi possível copiar.' } }));
                                     }
                                 }}
                             >
-                                {/* ícone “duas páginas” (inline SVG) */}
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                                     <path d="M9 3h9a2 2 0 0 1 2 2v9" stroke="#334155" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
                                     <rect x="3" y="7" width="14" height="14" rx="2" stroke="#334155" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
@@ -154,27 +138,17 @@ function Header({ onNewProjectClick, isProjectView, projectCode }) {
                             </button>
                         </div>
                     )}
-
                 </div>
 
-                {/* DIREITA: Dashboard => +Novo Projeto + Busca | ProjectView => Ver Detalhes */}
+                {/* DIREITA */}
                 <div className="header-right">
                     {isProjectView ? (
-                        <button
-                            type="button"
-                            onClick={openProjectDetails}
-                            className="header-action-btn"
-                            aria-label="Ver detalhes do projeto"
-                        >
+                        <button type="button" onClick={openProjectDetails} className="header-action-btn">
                             Ver Detalhes do Projeto
                         </button>
                     ) : (
                         <>
-                            <button
-                                type="button"
-                                onClick={onNewProjectClick}
-                                className="header-action-btn primary"
-                            >
+                            <button type="button" onClick={onNewProjectClick} className="header-action-btn primary">
                                 + Novo Projeto
                             </button>
 

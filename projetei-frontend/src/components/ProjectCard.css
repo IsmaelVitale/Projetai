@@ -1,8 +1,10 @@
+/* Link do card (não muda cor/underline) */
 .project-card-link {
     text-decoration: none;
     color: inherit;
 }
 
+/* Card */
 .project-card {
     background-color: #fff;
     border: 1px solid #e2e8f0;
@@ -17,23 +19,35 @@
     box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
 }
 
-/* Header: título + código (com copiar) */
-.card-header {
+/* Header do card: título à esquerda, código/ícones à direita */
+.project-card .card-header {
     display: flex;
-    align-items: center;
+    align-items: center;           /* ✅ evita “cabeçalho torto” quando não quebra */
     justify-content: space-between;
     gap: .5rem;
     margin-bottom: 1rem;
 }
-.card-header h3 {
+
+/* Título — permite quebrar dentro de flex */
+.project-card .card-header h3 {
+    flex: 1 1 auto;
+    min-width: 0;                  /* ✅ permite o wrap dentro de flex */
     margin: 0;
     font-size: 1.2rem;
     color: #1e293b;
+    line-height: 1.25;
+    overflow-wrap: anywhere;       /* quebra palavras longas */
+    word-break: break-word;        /* fallback */
 }
-.card-code {
+
+/* Grupo da direita (código + ícones) — não encolhe */
+.card-code,
+.code-row {
     display: inline-flex;
     align-items: center;
-    gap: .3rem;
+    gap: .35rem;
+    flex-shrink: 0;                /* ✅ não empurra o título */
+    white-space: nowrap;           /* código em 1 linha */
 }
 
 /* Código (pílula) */
@@ -48,18 +62,18 @@
     font-family: 'Courier New', Courier, monospace;
 }
 
-/* Botão copiar (seu padrão) */
+/* Botões (copiar / lixeira) */
 .icon-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 30px;        /* tamanho fixo */
+    width: 30px;
     height: 30px;
-    border: none;       /* sem borda */
-    background: none;   /* sem fundo */
+    border: none;
+    background: none;
     cursor: pointer;
     padding: 0;
-    border-radius: 8px; /* arredondado */
+    border-radius: 8px;
     transition: background-color .2s;
 }
 .icon-btn:hover { background: #f1f5f9; }
@@ -70,12 +84,13 @@
     font-size: 0.9rem;
     color: #475569;
     margin: 0 0 1.5rem 0;
-    min-height: 40px; /* mantém cards alinhados mesmo com textos diferentes */
+    min-height: 40px;
+    overflow-wrap: anywhere;       /* quebra textos longos */
+    word-break: break-word;
 }
 
-/* Rodapé — progresso idêntico ao TaskCard */
+/* Progresso (mesmo visual do TaskCard) */
 .card-footer { display: flex; align-items: center; gap: 1rem; }
-
 .task-progress { width: 100%; }
 .task-progress-track {
     width: 100%;

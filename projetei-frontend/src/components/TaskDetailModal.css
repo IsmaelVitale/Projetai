@@ -214,3 +214,47 @@
 
 /* Garantias de quebra e box-model */
 .modal-content * { box-sizing: border-box; }
+/* (Todo o CSS anterior permanece igual) */
+/* ... */
+
+/* ===== Footer ===== */
+.modal-footer {
+    display: flex; justify-content: flex-end;
+    padding: 0.9rem 1.5rem; /* antes: padding-top + margin-top separados */
+}
+.danger-btn {
+    background: #ef4444; color: #fff; border: none;
+    padding: 0.6rem 1.2rem; border-radius: 8px; font-weight: bold; cursor: pointer;
+}
+.danger-btn:hover { background: #dc2626; }
+
+/* ===== Animação ===== */
+@keyframes slide-down {
+    from { transform: translateY(-20px); opacity: 0; }
+    to   { transform: translateY(0);     opacity: 1; }
+}
+
+/* (Media queries permanecem iguais) */
+/* ... */
+
+/* Garantias de quebra e box-model */
+.modal-content * { box-sizing: border-box; }
+
+/* --- NOVO ESTILO PARA O INPUT DO AUTOR --- */
+.comment-form .author-input-group {
+    margin-bottom: 0.75rem;
+}
+.comment-form .author-input-group label {
+    display: block;
+    font-size: 0.8rem;
+    color: #475569;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+}
+.comment-form .author-input-group input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}

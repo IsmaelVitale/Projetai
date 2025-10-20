@@ -222,83 +222,80 @@ function ProjectView() {
         setProject((prev) => ({ ...prev, tasks: prev.tasks.filter((t) => t.id !== taskId) }));
     };
 
-    // Checklist
+// Checklist
     const handleChecklistItemAdd = async (itemData) => {
         if (!selectedTask) return;
         const newItem = await addChecklistItemToTask(selectedTask.id, itemData);
-        if (newItem) {
-            const updated = await fetchTaskById(selectedTask.id);
-            setSelectedTask(updated);
-            setProject((prev) => ({
-                ...prev,
-                tasks: prev.tasks.map((t) => (t.id === updated.id ? updated : t)),
-            }));
-        }
+        if (newItem) await refreshSelectedTask(selectedTask.id);
     };
 
     const handleChecklistItemUpdate = async (itemId, updateData) => {
         if (!selectedTask) return;
-        await updateChecklistItem(itemId, updateData);
-        const updated = await fetchTaskById(selectedTask.id);
-        setSelectedTask(updated);
-        setProject((prev) => ({
-            ...prev,
-            tasks: prev.tasks.map((t) => (t.id === updated.id ? updated : t)),
-        }));
+        const ok = await updateChecklistItem(itemId, updateData);
+        if (ok) await refreshSelectedTask(selectedTask.id);
     };
 
+    // DELETE do checklist
     const handleChecklistItemDelete = async (itemId) => {
         if (!selectedTask) return;
-        const success = await deleteChecklistItem(itemId);
-        if (success) {
-            const updated = await fetchTaskById(selectedTask.id);
-            setSelectedTask(updated);
-            setProject((prev) => ({
-                ...prev,
-                tasks: prev.tasks.map((t) => (t.id === updated.id ? updated : t)),
-            }));
+        try {
+            await deleteChecklistItem(itemId);
+            // Se a linha acima não der erro, a exclusão foi um sucesso.
+            await refreshSelectedTask(selectedTask.id);
+        } catch (err) {
+            console.error("Erro ao deletar item do checklist:", err);
+            alert("Não foi possível deletar o item do checklist.");
         }
     };
 
-    // Comentários
+
+
+// Comentários
     const handleCommentAdd = async (commentData) => {
         if (!selectedTask) return;
-        const newComment = await addCommentToTask(selectedTask.id, commentData);
-        if (newComment) {
-            const updated = await fetchTaskById(selectedTask.id);
-            setSelectedTask(updated);
-            setProject((prev) => ({
-                ...prev,
-                tasks: prev.tasks.map((t) => (t.id === updated.id ? updated : t)),
-            }));
-        }
+        const newC = await addCommentToTask(selectedTask.id, commentData);
+        if (newC) await refreshSelectedTask(selectedTask.id);
     };
 
     const handleCommentUpdate = async (commentId, commentData) => {
         if (!selectedTask) return;
-        const updatedComment = await updateComment(commentId, commentData);
-        if (updatedComment) {
-            const updated = await fetchTaskById(selectedTask.id);
-            setSelectedTask(updated);
-            setProject((prev) => ({
-                ...prev,
-                tasks: prev.tasks.map((t) => (t.id === updated.id ? updated : t)),
-            }));
+        const ok = await updateComment(commentId, commentData);
+        if (ok) await refreshSelectedTask(selectedTask.id);
+    };
+
+    // DELETE de comentário
+    const handleCommentDelete = async (commentId) => {
+        if (!selectedTask) return;
+        try {
+            await deleteComment(commentId);
+            // Se a linha acima não der erro, a exclusão foi um sucesso.
+            await refreshSelectedTask(selectedTask.id);
+        } catch (err) {
+            console.error("Erro ao deletar comentário:", err);
+            alert("Não foi possível deletar o comentário.");
         }
     };
 
-    const handleCommentDelete = async (commentId) => {
-        if (!selectedTask) return;
-        const success = await deleteComment(commentId);
-        if (success) {
-            const updated = await fetchTaskById(selectedTask.id);
+
+
+// 1) Deixe o helper ser o ÚNICO lugar que busca e sincroniza:
+    const refreshSelectedTask = async (taskId) => {
+        try {
+            const updated = await fetchTaskById(taskId);
+            if (!updated) return null;
             setSelectedTask(updated);
-            setProject((prev) => ({
+            setProject(prev => ({
                 ...prev,
-                tasks: prev.tasks.map((t) => (t.id === updated.id ? updated : t)),
+                tasks: (prev.tasks || []).map(t => t.id === updated.id ? updated : t)
             }));
+            return updated; // se quiser usar o retorno
+        } catch (e) {
+            console.error('Falha ao recarregar tarefa após alteração:', e);
+            return null;
         }
     };
+
+
 
     // --- Render ---
     if (loading) return <div className="loading-message">Carregando projeto...</div>;
