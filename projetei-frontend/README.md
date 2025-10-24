@@ -9,7 +9,7 @@ Esta é a aplicação frontend para o gerenciador de projetos "Projetaí". É um
 
 ## Sobre o Projeto
 
-Este projeto é a interface visual do Projetaí. Ele foi construído para ser rápido, reativo e fácil de manter, utilizando ferramentas modernas do ecossistema JavaScript. O objetivo é consumir a API REST para fornecer funcionalidades de CRUD (Criar, Ler, Atualizar, Deletar) de forma intuitiva para o usuário.
+Este projeto é a interface visual do Projetaí... Ele foi construído para ser rápido, reativo e fácil de manter, utilizando ferramentas modernas do ecossistema JavaScript. O objetivo é consumir a API REST para fornecer funcionalidades de CRUD (Criar, Ler, Atualizar, Deletar) de forma intuitiva para o usuário.
 
 A arquitetura foca na separação de responsabilidades:
 * **Pages**: Controlam o carregamento de dados e a lógica de negócios daquela "tela" (`Dashboard.jsx`, `ProjectView.jsx`).
