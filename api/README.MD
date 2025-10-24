@@ -23,7 +23,6 @@ Este projeto foi construído utilizando um conjunto de tecnologias modernas e co
 * **MySQL:** Banco de dados relacional para o armazenamento persistente dos dados.
 * **Maven:** Ferramenta de gerenciamento de dependências e build do projeto.
 * **Springdoc OpenAPI (Swagger):** Para a geração automática de documentação da API de forma interativa.
-* **Spring Security (Planejado):** Módulo para implementação de autenticação (via JWT) e autorização.
 
 ## Arquitetura
 
@@ -37,7 +36,6 @@ A API segue o padrão arquitetural em camadas **Controller-Service-Repository**,
 
 ### Estrutura de Pastas
 
-```
 src/main/java/br/com/projetei/api
 ├── controller/      # Controladores REST (a porta de entrada)
 ├── dto/             # Data Transfer Objects (o contrato da API)
@@ -46,21 +44,17 @@ src/main/java/br/com/projetei/api
 ├── repository/      # Interfaces do Spring Data JPA (acesso ao banco)
 ├── service/         # Classes de serviço (a lógica de negócio)
 └── ApiApplication.java  # Classe principal da aplicação
-```
 
-## Pré-requisitos
-
-Antes de executar o projeto, garanta que você tem os seguintes softwares instalados:
-* JDK 17 ou superior
-* Maven 3.6 ou superior
-* MySQL 8.0 ou superior
 
 ## Como Executar o Projeto
+
+### Execução Local (Desenvolvimento)
 
 1.  **Clone o repositório:**
     ```sh
     git clone [URL_DO_SEU_REPOSITORIO]
     ```
+
 
 2.  **Crie o Banco de Dados:**
     * No seu cliente MySQL, execute o comando:
@@ -68,24 +62,121 @@ Antes de executar o projeto, garanta que você tem os seguintes softwares instal
         CREATE DATABASE projetei_db;
         ```
 
+
 3.  **Configure a Conexão:**
-    * Navegue até `src/main/resources/application.properties`.
+    * Navegue até `src/test/resources/application.properties`.
     * Altere os campos `spring.datasource.username` e `spring.datasource.password` com suas credenciais do MySQL.
 
 4.  **Execute a Aplicação:**
-    * Você pode executar a classe `ApiApplication.java` diretamente pela sua IDE (IntelliJ).
+    * Você pode executar a classe `ApiApplication.java` diretamente pela sua IDE.
     * Ou, via terminal, na raiz do projeto, execute:
         ```sh
         mvn spring-boot:run
         ```
     A aplicação estará rodando em `http://localhost:8081`.
 
+### Deploy em Produção (Oracle Cloud Infrastructure)
+
+Este guia resume os passos para implantar a API em uma VM (Compute Instance) na OCI com Oracle Linux.
+
+1.  **Infraestrutura OCI:**
+    * Crie uma **VCN** com uma **Sub-rede Pública** e um **Gateway de Internet**.
+    * Configure a **Tabela de Roteamento** da sub-rede pública com uma rota para o Gateway de Internet (Destino: `0.0.0.0/0`).
+    * Configure a **Security List** (Firewall) da VCN para liberar as portas de entrada (Ingress Rules):
+        * `TCP` porta `22` (Origem: `0.0.0.0/0`) - Para acesso SSH.
+        * `TCP` porta `8081` (Origem: `0.0.0.0/0`) - Para a API Spring Boot.
+
+2.  **Configuração da VM (Servidor):**
+    * Conecte-se à VM via SSH.
+    * Desative o firewall interno da VM (se necessário):
+        ```sh
+        sudo systemctl stop firewalld
+        sudo systemctl disable firewalld
+        ```
+    * Instale as dependências:
+        ```sh
+        sudo yum update -y
+        sudo yum install java-17-openjdk-devel -y
+        sudo yum install maven -y
+        sudo yum install mysql-server -y
+        ```
+    * Inicie o MySQL:
+        ```sh
+        sudo systemctl start mysqld
+        sudo systemctl enable mysqld
+        ```
+
+3.  **Configuração do Banco de Dados (na VM):**
+    * Acesse o console do MySQL: `sudo mysql`
+    * Execute os seguintes comandos SQL:
+        ```sql
+        CREATE DATABASE projetei_db;
+        CREATE USER 'projetei_user'@'localhost' IDENTIFIED BY 'SuaSenhaForteAqui';
+        GRANT ALL PRIVILEGES ON projetei_db.* TO 'projetei_user'@'localhost';
+        FLUSH PRIVILEGES;
+        exit;
+        ```
+
+4.  **Build do Projeto (na VM):**
+    * Faça o upload do código-fonte do projeto (ex: `api.zip`) para a VM via `scp`.
+    * Descompacte e acesse a pasta:
+        ```sh
+        unzip api.zip
+        cd api
+        ```
+    * Execute o build do Maven (pulando os testes que falham no deploy):
+        ```sh
+        sudo mvn clean install -Dmaven.test.skip=true
+        ```
+
+
+5.  **Configurar o Serviço (Systemd):**
+    * Para garantir que a API rode 24/7 e inicie com o boot, crie um serviço `systemd`:
+        ```sh
+        sudo nano /etc/systemd/system/projetei.service
+        ```
+    * Cole o seguinte conteúdo (substitua a senha):
+        ```ini
+        [Unit]
+        Description=Projetei API Backend Service
+        After=network.target mysqld.service
+
+        [Service]
+        User=opc
+        WorkingDirectory=/home/opc/api
+        ExecStart=/usr/bin/java -jar /home/opc/api/target/api-0.0.1-SNAPSHOT.jar
+        SuccessExitStatus=143
+        
+        # Variáveis de ambiente para o banco de dados
+        Environment="SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/projetei_db?useTimezone=true&serverTimezone=UTC"
+        Environment="SPRING_DATASOURCE_USERNAME=projetei_user"
+        Environment="SPRING_DATASOURCE_PASSWORD=SuaSenhaForteAqui"
+        
+        # Reinicia o servico se ele falhar
+        Restart=always
+
+        [Install]
+        WantedBy=multi-user.target
+        ```
+    * Recarregue, habilite e inicie o serviço:
+        ```sh
+        sudo systemctl daemon-reload
+        sudo systemctl enable projetei.service
+        sudo systemctl start projetei.service
+        ```
+    * Verifique o status: `sudo systemctl status projetei.service`
+
 ## Documentação da API (Swagger)
 
-Com a aplicação em execução, a documentação completa e interativa da API pode ser acessada através dos seguintes links:
+Com a aplicação em execução, a documentação completa e interativa da API pode ser acessada:
 
+### Ambiente Local
 * **Swagger UI (Interface Gráfica):** [http://localhost:8081/swagger-ui.html](http://localhost:8081/swagger-ui.html)
 * **OpenAPI JSON (Nível de Máquina):** [http://localhost:8081/v3/api-docs](http://localhost:8081/v3/api-docs)
+
+### Ambiente de Produção (OCI)
+* **Swagger UI (Interface Gráfica):** [http://163.176.150.158:8081/swagger-ui.html](http://163.176.150.158:8081/swagger-ui.html)
+* **OpenAPI JSON (Nível de Máquina):** [http://163.176.150.158:8081/v3/api-docs](http://163.176.150.158:8081/v3/api-docs)
 
 ---
 Feito por [ISMAEL GIUSEPPE]
