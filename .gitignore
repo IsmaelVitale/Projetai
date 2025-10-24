@@ -37,3 +37,10 @@ buildNumber.properties
 # Arquivos de cache do npm
 .npm
 .npmrc
+
+# Arquivos de ambiente
+.env
+.env.*
+!.env.example
+Comandos.md
+api.zip
